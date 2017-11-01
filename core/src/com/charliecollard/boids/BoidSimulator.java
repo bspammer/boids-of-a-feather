@@ -11,7 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 50;
+	public static final int BOID_COUNT = 1000;
 
 	SpriteBatch sb;
 	List<Boid> boidList = new ArrayList<Boid>();
@@ -33,11 +33,11 @@ public class BoidSimulator extends ApplicationAdapter {
         for (Boid boid : boidList) {
             List<Boid> closeBoids = new ArrayList<Boid>();
             for (Boid closeBoid : boidList) {
-                if (boid.getPosition().dst(closeBoid.getPosition()) < 80) {
+                if (boid.getPosition().dst(closeBoid.getPosition()) < 80 && !boid.equals(closeBoid)) {
                     closeBoids.add(closeBoid);
                 }
             }
-            boid.update(0.02f, closeBoids);
+            boid.update(Gdx.graphics.getDeltaTime(), closeBoids);
             boid.render(sb);
         }
 		sb.end();
