@@ -9,11 +9,12 @@ import java.util.List;
 import java.util.Random;
 
 public class Boid {
-    private static final float MAX_SPEED = 200f;
-    private static final float MIN_SEPERATION = 80f;
-    private static final float CORRECTION_RATE = 0.5f;
-    private static final float ACCELERATION = 1.01f;
-    private static final float PI = (float) Math.PI;
+    public static final float MAX_SPEED = 200f;
+    public static final float MIN_DISTANCE = 40f;
+    public static final float VISION_RANGE = 80f;
+    public static final float CORRECTION_RATE = 0.1f;
+    public static final float ACCELERATION = 1.01f;
+    public static final float PI = (float) Math.PI;
 
     private Vector2 position;
     private Vector2 velocity;
@@ -25,62 +26,66 @@ public class Boid {
         boidSprite = new Sprite(TextureController.getInstance().BOID);
         boidSprite.setOrigin(boidSprite.getWidth() / 2, boidSprite.getHeight() / 2);
 
-        float heading = rand.nextFloat() * 4 * PI;
-        this.setPosition(new Vector2(Gdx.graphics.getWidth()/2,Gdx.graphics.getHeight()/2));//this.setPosition(new Vector2(rand.nextFloat() * Gdx.graphics.getWidth(), rand.nextFloat() * Gdx.graphics.getHeight()));
+//        float heading = rand.nextFloat() * 4 * PI;
+        float heading = 0;
+//        this.setPosition(new Vector2(Gdx.graphics.getWidth()/2,Gdx.graphics.getHeight()/2));
+        this.setPosition(new Vector2(rand.nextFloat() * Gdx.graphics.getWidth(), rand.nextFloat() * Gdx.graphics.getHeight()));
         this.setVelocity(new Vector2((float) (MAX_SPEED * Math.sin(heading)), (float) (MAX_SPEED * Math.cos(heading))));
     }
 
-    public void update(float dt, List<Boid> nearbyBoids) {
-        Vector2 currentPosition = this.getPosition();
-        Vector2 currentVelocity = this.getVelocity();
+    public Boid(Vector2 startPosition, Vector2 startVelocity) {
+        this();
+        this.setPosition(startPosition);
+        this.setVelocity(startVelocity);
+    }
 
-        for (Boid boid : nearbyBoids) {
-            Vector2 boidPosition = boid.getPosition();
+    public void update(float dt, List<Vector2> nearbyBoids) {
+        Vector2 lastPosition = this.getPosition();
+        Vector2 lastVelocity = this.getVelocity();
+
+        for (Vector2 boidPosition : nearbyBoids) {
             Vector2 deltaV;
-            float seperation = currentPosition.dst(boidPosition);
-            if (seperation < MIN_SEPERATION) {
-                deltaV = currentPosition.cpy().sub(boidPosition).scl(CORRECTION_RATE);
+            float distance = this.boidDst(boidPosition);
+            if (distance < MIN_DISTANCE) {
+                deltaV = lastPosition.cpy().sub(boidPosition).scl(CORRECTION_RATE);
             } else {
-                deltaV = currentPosition.cpy().add(boidPosition).scl(CORRECTION_RATE);
+                deltaV = lastPosition.cpy().add(boidPosition).scl(CORRECTION_RATE);
             }
-            currentVelocity.add(deltaV);
+            lastVelocity.add(deltaV);
         }
 
-        float currentSpeed = currentVelocity.len();
+        float currentSpeed = lastVelocity.len();
         if (currentSpeed > MAX_SPEED) {
-            currentVelocity.scl(MAX_SPEED/currentSpeed);
+            lastVelocity.scl(MAX_SPEED/currentSpeed);
         } else {
-            currentVelocity.scl(ACCELERATION);
+            lastVelocity.scl(ACCELERATION);
         }
 
-        currentPosition.add(currentVelocity.cpy().scl(dt));
+        lastPosition.add(lastVelocity.cpy().scl(dt));
 
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
-        float spriteWidth = boidSprite.getWidth();
-        float spriteHeight = boidSprite.getHeight();
-        if (currentPosition.x < 0 - spriteWidth) {
-            currentPosition.x = screenWidth + spriteWidth + (currentPosition.x % screenWidth);
+        if (lastPosition.x < 0) {
+            lastPosition.x += screenWidth;
         }
-        if (currentPosition.x > screenWidth + spriteWidth) {
-            currentPosition.x = 0 - 2 * spriteWidth + (currentPosition.x % screenWidth);
+        if (lastPosition.x > screenWidth) {
+            lastPosition.x -= screenWidth;
         }
-        if (currentPosition.y < 0 - spriteHeight) {
-            currentPosition.y = screenHeight + spriteHeight + (currentPosition.y % screenHeight);
+        if (lastPosition.y < 0) {
+            lastPosition.y += screenHeight;
         }
-        if (currentPosition.y > screenHeight + spriteHeight) {
-            currentPosition.y = 0 - 2 * spriteHeight + (currentPosition.y % screenHeight);
+        if (lastPosition.y > screenHeight) {
+            lastPosition.y -= screenHeight;
         }
-        this.setPosition(currentPosition);
-        this.setVelocity(currentVelocity);
+        this.setPosition(lastPosition);
+        this.setVelocity(lastVelocity);
     }
 
     public void render(SpriteBatch sb) {
         Vector2 currentPosition = this.getPosition();
         Vector2 currentVelocity = this.getVelocity();
-        boidSprite.setPosition(currentPosition.x, currentPosition.y);
         boidSprite.setRotation(currentVelocity.angle()-90);
-        boidSprite.setScale(0.5f);
+        boidSprite.setPosition(currentPosition.x-boidSprite.getWidth()/2, currentPosition.y-boidSprite.getHeight()/2);
         boidSprite.draw(sb);
     }
 
@@ -96,8 +101,8 @@ public class Boid {
         this.position.y = newY;
     }
 
-    public void setVelocity(Vector2 newPos) {
-        this.velocity = newPos;
+    public void setVelocity(Vector2 newVel) {
+        this.velocity = newVel;
     }
 
     public void setVelocityX(float newX) {
@@ -109,10 +114,28 @@ public class Boid {
     }
 
     public Vector2 getPosition() {
-        return new Vector2(this.position);
+        return this.position.cpy();
     }
 
     public Vector2 getVelocity() {
-        return new Vector2(this.velocity);
+        return this.velocity.cpy();
+    }
+
+    public float boidDst(Boid other) {
+        return boidDst(other.getPosition());
+    }
+
+    public float boidDst(Vector2 otherPos) {
+        float xDelta = Math.abs(this.getPosition().x - otherPos.x);
+        float yDelta = Math.abs(this.getPosition().y - otherPos.y);
+        float screenWidth = Gdx.graphics.getWidth();
+        float screenHeight = Gdx.graphics.getHeight();
+        if (xDelta > screenWidth/2) {
+            xDelta = screenWidth - xDelta;
+        }
+        if (yDelta > screenHeight/2) {
+            yDelta = screenHeight - yDelta;
+        }
+        return (float)Math.sqrt(xDelta*xDelta + yDelta*yDelta);
     }
 }
