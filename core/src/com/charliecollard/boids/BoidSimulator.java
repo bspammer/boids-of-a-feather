@@ -12,18 +12,15 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 0;
+	public static final int BOID_COUNT = 50;
 
     public static boolean debug_circles = false;
 
-	SpriteBatch sb;
-	List<Boid> boidList = new ArrayList<Boid>();
+	private SpriteBatch sb;
+	private List<Boid> boidList = new ArrayList<Boid>();
 
 	@Override
 	public void create() {
@@ -31,8 +28,8 @@ public class BoidSimulator extends ApplicationAdapter {
 		for (int i = 0; i < BOID_COUNT; i++) {
 			boidList.add(new Boid());
 		}
-//        boidList.add(new Boid(new Vector2(20, 20), new Vector2(0, 200)));
-//        boidList.add(new Boid(new Vector2(Gdx.graphics.getWidth()-20, 20), new Vector2(0,200)));
+//        boidList.add(new Boid(new Vector2(500, 500), new Vector2(0, 200)));
+//        boidList.add(new Boid(new Vector2(500, 500.01f), new Vector2(0, -200)));
         Gdx.input.setInputProcessor(new InputProcessor() {
             @Override
             public boolean keyDown(int keycode) {
@@ -56,9 +53,8 @@ public class BoidSimulator extends ApplicationAdapter {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
-                    Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getWidth()-screenY-60);
-                    Vector2 boidVelocity = new Vector2(0, 200f);
-                    boidList.add(new Boid(boidPosition, boidVelocity));
+                    Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                    boidList.add(new Boid(boidPosition));
                     return true;
                 }
                 return false;
@@ -87,21 +83,26 @@ public class BoidSimulator extends ApplicationAdapter {
 	}
 
     public void update() {
-        Map<Boid, List<Vector2>> neighbourMap = new HashMap<Boid, List<Vector2>>();
+        Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<Boid, List<Vector2>>();
+        Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<Boid, List<Vector2>>();
         // For each boid, discover all close boids without updating them
         for (Boid boid : boidList) {
             List<Vector2> neighbourPositions = new ArrayList<Vector2>();
+            List<Vector2> neighbourVelocities = new ArrayList<Vector2>();
             for (Boid otherBoid : boidList) {
-                if (!boid.equals(otherBoid) && boid.boidDst(otherBoid) < Boid.VISION_RANGE) {
+                float distanceFromOther = boid.boidDisplacement(otherBoid).len();
+                if (!boid.equals(otherBoid) && distanceFromOther < Boid.VISION_RANGE) {
                     neighbourPositions.add(otherBoid.getPosition());
+                    neighbourVelocities.add(otherBoid.getVelocity());
                 }
             }
-            neighbourMap.put(boid, neighbourPositions);
+            neighbourPositionMap.put(boid, neighbourPositions);
+            neighbourVelocityMap.put(boid, neighbourVelocities);
         }
 
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
-            boid.update(Gdx.graphics.getDeltaTime(), neighbourMap.get(boid));
+            boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
         }
     }
 
