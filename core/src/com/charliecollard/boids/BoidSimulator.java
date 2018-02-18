@@ -90,9 +90,12 @@ public class BoidSimulator extends ApplicationAdapter {
             List<Vector2> neighbourPositions = new ArrayList<Vector2>();
             List<Vector2> neighbourVelocities = new ArrayList<Vector2>();
             for (Boid otherBoid : boidList) {
-                float distanceFromOther = boid.boidDisplacement(otherBoid).len();
-                if (!boid.equals(otherBoid) && distanceFromOther < Boid.VISION_RANGE) {
-                    neighbourPositions.add(otherBoid.getPosition());
+                Vector2 boidDisplacement = boid.boidDisplacement(otherBoid);
+                float separation = boidDisplacement.len();
+                if (!boid.equals(otherBoid) && separation < Boid.VISION_RANGE) {
+                    // We give the boid its relative displacement to the neighbouring boids
+                    // This allows calculations to be done regardless of the screen wrapping
+                    neighbourPositions.add(boidDisplacement);
                     neighbourVelocities.add(otherBoid.getVelocity());
                 }
             }

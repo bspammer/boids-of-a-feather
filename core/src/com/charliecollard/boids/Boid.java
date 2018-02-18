@@ -9,12 +9,16 @@ import java.util.List;
 import java.util.Random;
 
 public class Boid {
-    public static final float MAX_SPEED = 200f;
-    public static final float MIN_DISTANCE = 20f;
-    public static final float VISION_RANGE = 90f;
+    public static final float MAX_SPEED = 400f;
+    public static final float MIN_DISTANCE = 40f;
+    public static final float VISION_RANGE = 150f;
     public static final float CORRECTION_RATE = 1f;
     public static final float ACCELERATION = 1.01f;
     public static final float PI = (float)Math.PI;
+
+    public static float separationWeight = 0.03f;
+    public static float cohesionWeight = 0.03f;
+    public static float alignmentWeight = 0.03f;
 
     private Vector2 position;
     private Vector2 velocity;
@@ -44,65 +48,66 @@ public class Boid {
         this.setVelocity(startVelocity);
     }
 
-    public void update(float dt, List<Vector2> nearbyBoidPositions, List<Vector2> nearbyBoidVelocities) {
+    public void update(float deltaTime, List<Vector2> nearbyBoidDisplacements, List<Vector2> nearbyBoidVelocities) {
         // Sanity check
-        if (nearbyBoidPositions.size() != nearbyBoidVelocities.size()) {
+        if (nearbyBoidDisplacements.size() != nearbyBoidVelocities.size()) {
             throw new IllegalStateException("Position list and velocity list not of equal length.");
         }
+        Vector2 newPosition = this.getPosition();
+        Vector2 newVelocity = this.getVelocity();
 
-        Vector2 myPosition = this.getPosition();
-        Vector2 myVelocity = this.getVelocity();
-
-        if (nearbyBoidPositions.size() > 0) {
-            Vector2 avgVelocity = new Vector2(0, 0);
-            for (Vector2 boidVelocity : nearbyBoidVelocities) {
-                boidVelocity.scl(1/boidVelocity.len());
-                avgVelocity.add(boidVelocity);
-            }
-            avgVelocity.scl(1/avgVelocity.len());
-            avgVelocity.scl(CORRECTION_RATE);
-            myVelocity.add(avgVelocity);
+        // Calculate separation steer
+        Vector2 separation = new Vector2(0, 0);
+        for (Vector2 boidDisplacement : nearbyBoidDisplacements) {
+            separation.add(boidDisplacement);
         }
+        separation.scl(-1);
 
-        for (Vector2 boidPosition : nearbyBoidPositions) {
-            Vector2 displacement = this.boidDisplacement(boidPosition);
-            float distance = displacement.len();
-            if (distance > MIN_DISTANCE) {
-                displacement.scl(-1f);
-            }
-            // Normalize the displacement direction
-            if (distance > 0) {
-                displacement.scl(1/distance);
-            }
-            displacement.scl(CORRECTION_RATE);
-            myVelocity.add(displacement);
-        }
-
-        float currentSpeed = myVelocity.len();
-        if (currentSpeed > MAX_SPEED) {
-            myVelocity.scl(MAX_SPEED/currentSpeed);
+        // Calculate cohesion steer
+        Vector2 cohesion;
+        if (nearbyBoidDisplacements.size() == 0) {
+            cohesion = new Vector2(0, 0);
         } else {
-            myVelocity.scl(ACCELERATION);
+            Vector2 centreOfMass = new Vector2(0, 0);
+            for (Vector2 boidDisplacement : nearbyBoidDisplacements) {
+                centreOfMass.add(boidDisplacement);
+            }
+            centreOfMass.scl(1f/nearbyBoidDisplacements.size());
+            cohesion = centreOfMass;
         }
 
-        myPosition.add(myVelocity.cpy().scl(dt));
+        // Calculate alignment steer
+        Vector2 alignment = new Vector2(0, 0);
+        if (nearbyBoidVelocities.size() != 0) {
+            for (Vector2 boidVelocity : nearbyBoidVelocities) {
+                alignment.add(boidVelocity);
+            }
+            alignment.scl(1f / nearbyBoidVelocities.size());
+        }
+
+        // Add the steering forces to current velocity, then calculate new position
+        newVelocity.add(separation.scl(separationWeight));
+        newVelocity.add(cohesion.scl(cohesionWeight));
+        newVelocity.add(alignment.scl(alignmentWeight));
+        if (newVelocity.len() > MAX_SPEED) newVelocity.scl(MAX_SPEED/newVelocity.len());
+        newPosition.add(newVelocity.cpy().scl(deltaTime));
 
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
-        if (myPosition.x < 0) {
-            myPosition.x += screenWidth;
+        if (newPosition.x < 0) {
+            newPosition.x += screenWidth;
         }
-        if (myPosition.x > screenWidth) {
-            myPosition.x -= screenWidth;
+        if (newPosition.x > screenWidth) {
+            newPosition.x -= screenWidth;
         }
-        if (myPosition.y < 0) {
-            myPosition.y += screenHeight;
+        if (newPosition.y < 0) {
+            newPosition.y += screenHeight;
         }
-        if (myPosition.y > screenHeight) {
-            myPosition.y -= screenHeight;
+        if (newPosition.y > screenHeight) {
+            newPosition.y -= screenHeight;
         }
-        this.setPosition(myPosition);
-        this.setVelocity(myVelocity);
+        this.setPosition(newPosition);
+        this.setVelocity(newVelocity);
     }
 
     public void render(SpriteBatch sb) {
@@ -143,7 +148,7 @@ public class Boid {
         } else {
             yDisplacement = myPos.y - (otherPos.y + screenHeight);
         }
-        return new Vector2(xDisplacement, yDisplacement);
+        return new Vector2(-xDisplacement, -yDisplacement);
     }
 
     public void setPosition(Vector2 newPos) {
