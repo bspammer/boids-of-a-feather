@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
@@ -15,16 +16,19 @@ import com.badlogic.gdx.utils.Disposable;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 50;
+	public static final int BOID_COUNT = 0;
 
     public static boolean debug_circles = false;
 
 	private SpriteBatch sb;
 	private List<Boid> boidList = new ArrayList<Boid>();
+    BitmapFont font;
 
 	@Override
 	public void create() {
 		sb = new SpriteBatch();
+        font = new BitmapFont();
+        font.setColor(Color.GREEN);
 		for (int i = 0; i < BOID_COUNT; i++) {
 			boidList.add(new Boid());
 		}
@@ -35,6 +39,32 @@ public class BoidSimulator extends ApplicationAdapter {
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.SPACE) {
                     debug_circles = !debug_circles;
+                    return true;
+                }
+
+                // Change steer weights
+                if (keycode == Input.Keys.A) {
+                    Boid.separationWeight += 0.005f;
+                    return true;
+                }
+                if (keycode == Input.Keys.Z) {
+                    if (Boid.separationWeight > 0) Boid.separationWeight -= 0.005f;
+                    return true;
+                }
+                if (keycode == Input.Keys.S) {
+                    Boid.cohesionWeight += 0.005f;
+                    return true;
+                }
+                if (keycode == Input.Keys.X) {
+                    if (Boid.cohesionWeight > 0) Boid.cohesionWeight -= 0.005f;
+                    return true;
+                }
+                if (keycode == Input.Keys.D) {
+                    Boid.alignmentWeight += 0.005f;
+                    return true;
+                }
+                if (keycode == Input.Keys.C) {
+                    if (Boid.alignmentWeight > 0) Boid.alignmentWeight -= 0.005f;
                     return true;
                 }
                 return false;
@@ -138,6 +168,13 @@ public class BoidSimulator extends ApplicationAdapter {
         for (Boid boid : boidList) {
             boid.render(sb);
         }
+
+        font.draw(sb, "Separation:", 10, 60);
+        font.draw(sb, String.format("%.3f", Boid.separationWeight), 90, 60);
+        font.draw(sb, "Cohesion:", 10, 40);
+        font.draw(sb, String.format("%.3f", Boid.cohesionWeight), 90, 40);
+        font.draw(sb, "Alignment:", 10, 20);
+        font.draw(sb, String.format("%.3f", Boid.alignmentWeight), 90, 20);
 		sb.end();
 
         // Take out the trash
