@@ -17,16 +17,24 @@ import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
 	public static final int BOID_COUNT = 100;
+    public static final int PLOT_UPDATE_PERIOD = 50; // update the plot every n ticks
 
     private static boolean debugCircles = false;
     protected static boolean boidColorsOn = true;
+
+    private static int plotUpdateCounter = 0;
 
 	private SpriteBatch sb;
 	private List<Boid> boidList = new ArrayList<Boid>();
     BitmapFont font;
 
+    private static PlotFrame plotFrame;
+
 	@Override
 	public void create() {
+        plotFrame = new PlotFrame("Plot frame");
+        plotFrame.setVisible(true);
+
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
@@ -130,6 +138,7 @@ public class BoidSimulator extends ApplicationAdapter {
         int mode = Boid.WRAP_PACMAN;
         Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<Boid, List<Vector2>>();
         Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<Boid, List<Vector2>>();
+        List<Float> distances = new ArrayList<>();
         // For each boid, discover all close boids without updating them
         // This way we update all boids in synchronisation
         for (Boid boid : boidList) {
@@ -145,6 +154,7 @@ public class BoidSimulator extends ApplicationAdapter {
                     neighbourPositions.add(relativeDisplacement);
                     neighbourVelocities.add(relativeVelocity);
                 }
+                distances.add(distance);
             }
             neighbourPositionMap.put(boid, neighbourPositions);
             neighbourVelocityMap.put(boid, neighbourVelocities);
@@ -154,6 +164,15 @@ public class BoidSimulator extends ApplicationAdapter {
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
             boid.performWrapping(mode);
+        }
+
+        // Update the plot
+        if (plotFrame != null) {
+            if (plotUpdateCounter == 0) {
+                updatePlot(distances);
+            }
+            plotUpdateCounter += 1;
+            plotUpdateCounter %= PLOT_UPDATE_PERIOD;
         }
     }
 
@@ -208,4 +227,9 @@ public class BoidSimulator extends ApplicationAdapter {
 		sb.dispose();
 		TextureController.getInstance().disposeAllTextures();
 	}
+
+    private static void updatePlot(List<Float> distances) {
+        UpdatePlotThread updatePlotThread = new UpdatePlotThread(plotFrame, distances);
+        updatePlotThread.start();
+    }
 }
