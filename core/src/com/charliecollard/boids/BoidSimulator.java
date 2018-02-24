@@ -16,9 +16,10 @@ import com.badlogic.gdx.utils.Disposable;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 0;
+	public static final int BOID_COUNT = 100;
 
-    public static boolean debug_circles = false;
+    private static boolean debugCircles = false;
+    protected static boolean boidColorsOn = true;
 
 	private SpriteBatch sb;
 	private List<Boid> boidList = new ArrayList<Boid>();
@@ -32,13 +33,14 @@ public class BoidSimulator extends ApplicationAdapter {
 		for (int i = 0; i < BOID_COUNT; i++) {
 			boidList.add(new Boid());
 		}
-//        boidList.add(new Boid(new Vector2(500, 500), new Vector2(0, 200)));
-//        boidList.add(new Boid(new Vector2(500, 500.01f), new Vector2(0, -200)));
+//        boidList.add(new Boid(new Vector2(440, 870), new Vector2(200, 0)));
+//        boidList.add(new Boid(new Vector2(870, 440), new Vector2(0, -200)));
+//        boidList.add(new Boid(new Vector2(440, 440), new Vector2(400, 400)));
         Gdx.input.setInputProcessor(new InputProcessor() {
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.SPACE) {
-                    debug_circles = !debug_circles;
+                    debugCircles = !debugCircles;
                     return true;
                 }
 
@@ -65,6 +67,18 @@ public class BoidSimulator extends ApplicationAdapter {
                 }
                 if (keycode == Input.Keys.C) {
                     if (Boid.alignmentWeight > 0) Boid.alignmentWeight -= 0.005f;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.P) {
+                    for (Boid boid : boidList) {
+                        if (boidColorsOn) {
+                           boid.boidSprite.setColor(1f, 1f, 1f, 1f);
+                        } else {
+                            boid.boidSprite.setColor(boid.spriteColor);
+                        }
+                    }
+                    boidColorsOn = !boidColorsOn;
                     return true;
                 }
                 return false;
@@ -113,20 +127,23 @@ public class BoidSimulator extends ApplicationAdapter {
 	}
 
     public void update() {
+        int mode = Boid.WRAP_PACMAN;
         Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<Boid, List<Vector2>>();
         Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<Boid, List<Vector2>>();
         // For each boid, discover all close boids without updating them
+        // This way we update all boids in synchronisation
         for (Boid boid : boidList) {
             List<Vector2> neighbourPositions = new ArrayList<Vector2>();
             List<Vector2> neighbourVelocities = new ArrayList<Vector2>();
             for (Boid otherBoid : boidList) {
-                Vector2 boidDisplacement = boid.boidDisplacement(otherBoid);
-                float separation = boidDisplacement.len();
-                if (!boid.equals(otherBoid) && separation < Boid.VISION_RANGE) {
+                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, mode);
+                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, mode);
+                float distance = relativeDisplacement.len();
+                if (!boid.equals(otherBoid) && distance < Boid.VISION_RANGE) {
                     // We give the boid its relative displacement to the neighbouring boids
                     // This allows calculations to be done regardless of the screen wrapping
-                    neighbourPositions.add(boidDisplacement);
-                    neighbourVelocities.add(otherBoid.getVelocity());
+                    neighbourPositions.add(relativeDisplacement);
+                    neighbourVelocities.add(relativeVelocity);
                 }
             }
             neighbourPositionMap.put(boid, neighbourPositions);
@@ -136,6 +153,7 @@ public class BoidSimulator extends ApplicationAdapter {
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
+            boid.performWrapping(mode);
         }
     }
 
@@ -147,7 +165,7 @@ public class BoidSimulator extends ApplicationAdapter {
         update();
 		sb.begin();
         List<Disposable> trashcan = new ArrayList<Disposable>();
-        if (debug_circles) {
+        if (debugCircles) {
             Pixmap debugCircles = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
             trashcan.add(debugCircles);
 
@@ -169,6 +187,7 @@ public class BoidSimulator extends ApplicationAdapter {
             boid.render(sb);
         }
 
+        font.draw(sb, boidList.size() + " boids", 10, 80);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight), 90, 60);
         font.draw(sb, "Cohesion:", 10, 40);
