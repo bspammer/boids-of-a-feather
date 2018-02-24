@@ -13,8 +13,6 @@ public class Boid {
     public static final float MAX_SPEED = 400f;
     public static final float MIN_DISTANCE = 40f;
     public static final float VISION_RANGE = 75f;
-    public static final float CORRECTION_RATE = 1f;
-    public static final float ACCELERATION = 1.01f;
     public static final float PI = (float) Math.PI;
     public static final int WRAP_PACMAN = 101;
     public static final int WRAP_SPHERE = 102;

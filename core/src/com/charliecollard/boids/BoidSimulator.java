@@ -18,6 +18,8 @@ import java.util.*;
 public class BoidSimulator extends ApplicationAdapter {
 	public static final int BOID_COUNT = 100;
     public static final int PLOT_UPDATE_PERIOD = 50; // update the plot every n ticks
+    private static final boolean PLOT_ENABLED = true;
+    private static final int WRAP_MODE = Boid.WRAP_PACMAN;
 
     private static boolean debugCircles = false;
     protected static boolean boidColorsOn = true;
@@ -32,8 +34,10 @@ public class BoidSimulator extends ApplicationAdapter {
 
 	@Override
 	public void create() {
-        plotFrame = new PlotFrame("Plot frame");
-        plotFrame.setVisible(true);
+        if (PLOT_ENABLED) {
+            plotFrame = new PlotFrame("Plot frame");
+            plotFrame.setVisible(true);
+        }
 
 		sb = new SpriteBatch();
         font = new BitmapFont();
@@ -135,18 +139,17 @@ public class BoidSimulator extends ApplicationAdapter {
 	}
 
     public void update() {
-        int mode = Boid.WRAP_PACMAN;
-        Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<Boid, List<Vector2>>();
-        Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<Boid, List<Vector2>>();
+        Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<>();
+        Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<>();
         List<Float> distances = new ArrayList<>();
         // For each boid, discover all close boids without updating them
         // This way we update all boids in synchronisation
         for (Boid boid : boidList) {
-            List<Vector2> neighbourPositions = new ArrayList<Vector2>();
-            List<Vector2> neighbourVelocities = new ArrayList<Vector2>();
+            List<Vector2> neighbourPositions = new ArrayList<>();
+            List<Vector2> neighbourVelocities = new ArrayList<>();
             for (Boid otherBoid : boidList) {
-                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, mode);
-                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, mode);
+                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, WRAP_MODE);
+                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, WRAP_MODE);
                 float distance = relativeDisplacement.len();
                 if (!boid.equals(otherBoid) && distance < Boid.VISION_RANGE) {
                     // We give the boid its relative displacement to the neighbouring boids
@@ -163,7 +166,7 @@ public class BoidSimulator extends ApplicationAdapter {
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
-            boid.performWrapping(mode);
+            boid.performWrapping(WRAP_MODE);
         }
 
         // Update the plot
@@ -183,7 +186,7 @@ public class BoidSimulator extends ApplicationAdapter {
 
         update();
 		sb.begin();
-        List<Disposable> trashcan = new ArrayList<Disposable>();
+        List<Disposable> trashcan = new ArrayList<>();
         if (debugCircles) {
             Pixmap debugCircles = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
             trashcan.add(debugCircles);
