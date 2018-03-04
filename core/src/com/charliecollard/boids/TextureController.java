@@ -18,6 +18,6 @@ public class TextureController {
     }
 
     private TextureController() {
-        BOID = new Texture("boid.png");
+        BOID = new Texture("core/assets/boid.png");
     }
 }
