@@ -58,27 +58,27 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 // Change steer weights
                 if (keycode == Input.Keys.A) {
-                    Boid.separationWeight += 0.005f;
+                    Boid.separationWeight += 1;
                     return true;
                 }
                 if (keycode == Input.Keys.Z) {
-                    if (Boid.separationWeight > 0) Boid.separationWeight -= 0.005f;
+                    if (Boid.separationWeight > 0) Boid.separationWeight -= 1;
                     return true;
                 }
                 if (keycode == Input.Keys.S) {
-                    Boid.cohesionWeight += 0.005f;
+                    Boid.cohesionWeight += 1;
                     return true;
                 }
                 if (keycode == Input.Keys.X) {
-                    if (Boid.cohesionWeight > 0) Boid.cohesionWeight -= 0.005f;
+                    if (Boid.cohesionWeight > 0) Boid.cohesionWeight -= 1;
                     return true;
                 }
                 if (keycode == Input.Keys.D) {
-                    Boid.alignmentWeight += 0.005f;
+                    Boid.alignmentWeight += 1;
                     return true;
                 }
                 if (keycode == Input.Keys.C) {
-                    if (Boid.alignmentWeight > 0) Boid.alignmentWeight -= 0.005f;
+                    if (Boid.alignmentWeight > 0) Boid.alignmentWeight -= 1;
                     return true;
                 }
 
@@ -213,11 +213,11 @@ public class BoidSimulator extends ApplicationAdapter {
 
         font.draw(sb, boidList.size() + " boids", 10, 80);
         font.draw(sb, "Separation:", 10, 60);
-        font.draw(sb, String.format("%.3f", Boid.separationWeight), 90, 60);
+        font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);
         font.draw(sb, "Cohesion:", 10, 40);
-        font.draw(sb, String.format("%.3f", Boid.cohesionWeight), 90, 40);
+        font.draw(sb, String.format("%.3f", Boid.cohesionWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 40);
         font.draw(sb, "Alignment:", 10, 20);
-        font.draw(sb, String.format("%.3f", Boid.alignmentWeight), 90, 20);
+        font.draw(sb, String.format("%.3f", Boid.alignmentWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 20);
 		sb.end();
 
         // Take out the trash
