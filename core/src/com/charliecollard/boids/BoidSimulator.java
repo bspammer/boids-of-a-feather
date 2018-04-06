@@ -113,7 +113,7 @@ public class BoidSimulator extends ApplicationAdapter {
                     boidList.add(new Boid(boidPosition));
                     return true;
                 }
-                return false;
+                return true;
             }
 
             @Override
@@ -123,7 +123,9 @@ public class BoidSimulator extends ApplicationAdapter {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                return false;
+                Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                boidList.add(new Boid(boidPosition));
+                return true;
             }
 
             @Override
@@ -197,8 +199,8 @@ public class BoidSimulator extends ApplicationAdapter {
                 int y = (int)boidPosition.y;
                 debugCircles.setColor(Color.GREEN);
                 debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.VISION_RANGE);
-                debugCircles.setColor(Color.RED);
-                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.MIN_DISTANCE);
+//                debugCircles.setColor(Color.RED);
+//                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.MIN_DISTANCE);
             }
             Texture debugCircleTexture = new Texture(debugCircles);
             trashcan.add(debugCircleTexture);

@@ -11,15 +11,15 @@ import java.util.List;
 
 public class Boid {
     public static final float MAX_SPEED = 400f;
-    public static final float MIN_DISTANCE = 40f;
-    public static final float VISION_RANGE = 75f;
+//    public static final float MIN_DISTANCE = 75f;
+    public static final float VISION_RANGE = 100f;
     public static final float PI = (float) Math.PI;
     public static final int WRAP_PACMAN = 101;
     public static final int WRAP_SPHERE = 102;
 
-    public static float separationWeight = 0.0f;
-    public static float cohesionWeight = 0.3f;
-    public static float alignmentWeight = 0.0f;
+    public static float separationWeight = 0.3f;
+    public static float cohesionWeight = 0.1f;
+    public static float alignmentWeight = 0.005f;
 
     private Vector2 position;
     private Vector2 velocity;
@@ -37,7 +37,7 @@ public class Boid {
         java.awt.Color tempColor = java.awt.Color.getHSBColor(hue, saturation, luminance);
         spriteColor = new Color(((tempColor.getRGB() & 0xffffff) << 8) | 0xff);
         if (BoidSimulator.boidColorsOn) boidSprite.setColor(spriteColor);
-        boidSprite.setScale(0.5f);
+        boidSprite.setScale(0.65f);
 
         float heading = rand.nextFloat() * 2 * PI;
 //        float heading = 0;
