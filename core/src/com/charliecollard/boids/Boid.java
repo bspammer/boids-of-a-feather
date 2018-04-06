@@ -69,7 +69,7 @@ public class Boid {
         // Calculate separation steer
         Vector2 separation = new Vector2(0, 0);
         for (Vector2 boidDisplacement : nearbyBoidDisplacements) {
-            separation.add(boidDisplacement);
+            separation.add(boidDisplacement.cpy().scl(100/boidDisplacement.len2()));
         }
         separation.scl(-1);
 
