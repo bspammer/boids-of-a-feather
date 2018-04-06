@@ -37,7 +37,7 @@ public class Boid {
         float luminance = 0.9f;
         java.awt.Color tempColor = java.awt.Color.getHSBColor(hue, saturation, luminance);
         spriteColor = new Color(((tempColor.getRGB() & 0xffffff) << 8) | 0xff);
-        if (BoidSimulator.boidColorsOn) boidSprite.setColor(spriteColor);
+        if (BoidSimulator.debugBoidColorsOn) boidSprite.setColor(spriteColor);
         boidSprite.setScale(0.65f);
 
         float heading = rand.nextFloat() * 2 * PI;

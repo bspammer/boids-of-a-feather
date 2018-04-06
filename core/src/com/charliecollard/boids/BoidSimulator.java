@@ -22,7 +22,8 @@ public class BoidSimulator extends ApplicationAdapter {
     private static final int WRAP_MODE = Boid.WRAP_PACMAN;
 
     private static boolean debugCircles = false;
-    protected static boolean boidColorsOn = true;
+    private static boolean debugFluctuations = false;
+    protected static boolean debugBoidColorsOn = true;
 
     private static int plotUpdateCounter = 0;
 
@@ -56,6 +57,11 @@ public class BoidSimulator extends ApplicationAdapter {
                     return true;
                 }
 
+                if (keycode == Input.Keys.O) {
+                    debugFluctuations = !debugFluctuations;
+                    return true;
+                }
+
                 // Change steer weights
                 if (keycode == Input.Keys.A) {
                     Boid.separationWeight += 1;
@@ -84,13 +90,13 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 if (keycode == Input.Keys.P) {
                     for (Boid boid : boidList) {
-                        if (boidColorsOn) {
+                        if (debugBoidColorsOn) {
                            boid.boidSprite.setColor(1f, 1f, 1f, 1f);
                         } else {
                             boid.boidSprite.setColor(boid.spriteColor);
                         }
                     }
-                    boidColorsOn = !boidColorsOn;
+                    debugBoidColorsOn = !debugBoidColorsOn;
                     return true;
                 }
                 return false;
@@ -190,25 +196,53 @@ public class BoidSimulator extends ApplicationAdapter {
 		sb.begin();
         List<Disposable> trashcan = new ArrayList<>();
         if (debugCircles) {
-            Pixmap debugCircles = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
-            trashcan.add(debugCircles);
+            Pixmap circlePixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
+            trashcan.add(circlePixmap);
 
             for (Boid boid : boidList) {
                 Vector2 boidPosition = boid.getPosition();
                 int x = (int)boidPosition.x;
                 int y = (int)boidPosition.y;
-                debugCircles.setColor(Color.GREEN);
-                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.VISION_RANGE);
+                circlePixmap.setColor(Color.GREEN);
+                circlePixmap.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.VISION_RANGE);
 //                debugCircles.setColor(Color.RED);
 //                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.MIN_DISTANCE);
             }
-            Texture debugCircleTexture = new Texture(debugCircles);
+            Texture debugCircleTexture = new Texture(circlePixmap);
             trashcan.add(debugCircleTexture);
             sb.draw(debugCircleTexture, 0, 0);
         }
 
-        for (Boid boid : boidList) {
-            boid.render(sb);
+        if (debugFluctuations) {
+            Pixmap fluctuationPixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
+            trashcan.add(fluctuationPixmap);
+
+            Vector2 avgVelocity = new Vector2(0, 0);
+            for (Boid boid : boidList) {
+                Vector2 boidVelocity = boid.getVelocity();
+                avgVelocity.add(boidVelocity);
+                boid.render(sb);
+            }
+            avgVelocity.scl(1f/boidList.size());
+
+            for (Boid boid : boidList) {
+                Vector2 boidPosition = boid.getPosition();
+                Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
+                float angle = boidFluctuation.angleRad();
+                int x = (int) boidPosition.x;
+                int y = (int) (Gdx.graphics.getHeight()-boidPosition.y);
+                int x2 = (int) (x + (20*Math.log(boidFluctuation.len())*Math.cos(angle)));
+                int y2 = (int) (y - (20*Math.log(boidFluctuation.len())*Math.sin(angle)));
+                fluctuationPixmap.setColor(Color.YELLOW);
+                fluctuationPixmap.drawLine(x, y, x2, y2);
+            }
+            Texture fluctuationTexture = new Texture(fluctuationPixmap);
+            trashcan.add(fluctuationTexture);
+            sb.draw(fluctuationTexture, 0, 0);
+        } else {
+            for (Boid boid : boidList) {
+                boid.render(sb);
+            }
         }
 
         font.draw(sb, boidList.size() + " boids", 10, 80);
