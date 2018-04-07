@@ -230,10 +230,10 @@ public class BoidSimulator extends ApplicationAdapter {
                 Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
                 float angle = boidFluctuation.angleRad();
                 int x = (int) boidPosition.x;
-                int y = (int) (Gdx.graphics.getHeight()-boidPosition.y);
-                int x2 = (int) (x + (20*Math.log(boidFluctuation.len())*Math.cos(angle)));
-                int y2 = (int) (y - (20*Math.log(boidFluctuation.len())*Math.sin(angle)));
-                fluctuationPixmap.setColor(Color.YELLOW);
+                int y = (int) (Gdx.graphics.getHeight() - boidPosition.y);
+                int x2 = (int) (x + (boidFluctuation.len() * Math.cos(angle)));
+                int y2 = (int) (y - (boidFluctuation.len() * Math.sin(angle)));
+                fluctuationPixmap.setColor(Color.CYAN);
                 fluctuationPixmap.drawLine(x, y, x2, y2);
             }
             Texture fluctuationTexture = new Texture(fluctuationPixmap);
