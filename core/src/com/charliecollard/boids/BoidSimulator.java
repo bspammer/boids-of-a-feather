@@ -16,19 +16,25 @@ import com.badlogic.gdx.utils.Disposable;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 100;
+	public static final int BOID_COUNT = 200;
     public static final int PLOT_UPDATE_PERIOD = 50; // update the plot every n ticks
-    private static final boolean PLOT_ENABLED = true;
+    private static final boolean PLOT_ENABLED = false;
     private static final int WRAP_MODE = Boid.WRAP_PACMAN;
 
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
+    private static boolean debugCorrelations = false;
+    private static int correlationInterval = 10;
+    private static int correlationNumber = 40;
+    private static ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
     protected static boolean debugBoidColorsOn = true;
 
     private static int plotUpdateCounter = 0;
 
 	private SpriteBatch sb;
-	private List<Boid> boidList = new ArrayList<Boid>();
+	private List<Boid> boidList = new ArrayList<>();
+    private List<Vector2> velocityList = new ArrayList<>();
+    private Vector2 avgVelocity = new Vector2(0, 0);
     BitmapFont font;
 
     private static PlotFrame plotFrame;
@@ -38,6 +44,10 @@ public class BoidSimulator extends ApplicationAdapter {
         if (PLOT_ENABLED) {
             plotFrame = new PlotFrame("Plot frame");
             plotFrame.setVisible(true);
+        }
+
+        for (int i=0; i<correlationNumber; i++) {
+            correlationLists.add(new ArrayList<Float>());
         }
 
 		sb = new SpriteBatch();
@@ -59,6 +69,11 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 if (keycode == Input.Keys.O) {
                     debugFluctuations = !debugFluctuations;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.I) {
+                    debugCorrelations = !debugCorrelations;
                     return true;
                 }
 
@@ -150,6 +165,9 @@ public class BoidSimulator extends ApplicationAdapter {
         Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<>();
         Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<>();
         List<Float> distances = new ArrayList<>();
+        for (ArrayList<Float> list : correlationLists) {
+            list.clear();
+        }
         // For each boid, discover all close boids without updating them
         // This way we update all boids in synchronisation
         for (Boid boid : boidList) {
@@ -171,10 +189,36 @@ public class BoidSimulator extends ApplicationAdapter {
             neighbourVelocityMap.put(boid, neighbourVelocities);
         }
 
+        velocityList.clear();
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
             boid.performWrapping(WRAP_MODE);
+            velocityList.add(boid.getVelocity());
+        }
+
+        // Recalculate the average velocity for the whole system
+        avgVelocity = new Vector2(0, 0);
+        for (Vector2 boidVelocity : velocityList) {
+            avgVelocity.add(boidVelocity);
+        }
+        avgVelocity.scl(1f/boidList.size());
+
+        if (debugCorrelations) {
+            for (Boid boid : boidList) {
+                for (Boid otherBoid : boidList) {
+                    float distance = boid.relativeDisplacement(otherBoid, WRAP_MODE).len();
+                    if (distance < correlationInterval * correlationNumber) {
+                        Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
+                        Vector2 otherBoidFluctuation = otherBoid.getVelocity().sub(avgVelocity);
+                        float dotProduct = boidFluctuation.dot(otherBoidFluctuation);
+                        int index = (int) Math.floor(distance / correlationInterval);
+                        ArrayList<Float> list = correlationLists.get(index);
+                        list.add(dotProduct);
+                        correlationLists.set(index, list);
+                    }
+                }
+            }
         }
 
         // Update the plot
@@ -217,24 +261,18 @@ public class BoidSimulator extends ApplicationAdapter {
             Pixmap fluctuationPixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
             trashcan.add(fluctuationPixmap);
 
-            Vector2 avgVelocity = new Vector2(0, 0);
-            for (Boid boid : boidList) {
-                Vector2 boidVelocity = boid.getVelocity();
-                avgVelocity.add(boidVelocity);
-                boid.render(sb);
-            }
-            avgVelocity.scl(1f/boidList.size());
-
             for (Boid boid : boidList) {
                 Vector2 boidPosition = boid.getPosition();
                 Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
+                float fluctuationSize = boidFluctuation.len();
                 float angle = boidFluctuation.angleRad();
                 int x = (int) boidPosition.x;
                 int y = (int) (Gdx.graphics.getHeight() - boidPosition.y);
-                int x2 = (int) (x + (boidFluctuation.len() * Math.cos(angle)));
-                int y2 = (int) (y - (boidFluctuation.len() * Math.sin(angle)));
+                int x2 = (int) (x + (fluctuationSize * Math.cos(angle)));
+                int y2 = (int) (y - (fluctuationSize * Math.sin(angle)));
                 fluctuationPixmap.setColor(Color.CYAN);
                 fluctuationPixmap.drawLine(x, y, x2, y2);
+                boid.render(sb);
             }
             Texture fluctuationTexture = new Texture(fluctuationPixmap);
             trashcan.add(fluctuationTexture);
@@ -245,13 +283,26 @@ public class BoidSimulator extends ApplicationAdapter {
             }
         }
 
-        font.draw(sb, boidList.size() + " boids", 10, 80);
+        font.draw(sb, boidList.size() + " boids", 10, 100);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);
         font.draw(sb, "Cohesion:", 10, 40);
         font.draw(sb, String.format("%.3f", Boid.cohesionWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 40);
         font.draw(sb, "Alignment:", 10, 20);
         font.draw(sb, String.format("%.3f", Boid.alignmentWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 20);
+
+        if (debugCorrelations) {
+            ArrayList<Float> sums = new ArrayList<>();
+            for (ArrayList<Float> list : correlationLists) {
+                float sum = 0;
+                for (Float f : list) {
+                    sum += f;
+                }
+                if (list.size() > 0) sum /= list.size();
+                sums.add(sum);
+            }
+            System.out.println(sums.toString());
+        }
 		sb.end();
 
         // Take out the trash

@@ -7,7 +7,7 @@ import com.charliecollard.boids.BoidSimulator;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.width = 1820;
+		config.width = 880;
 //		config.width = 880;
 		config.height = 880;
 		config.x = 1920/2 - config.width/2;
