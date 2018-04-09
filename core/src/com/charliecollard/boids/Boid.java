@@ -12,11 +12,14 @@ import java.util.List;
 public class Boid {
     public static final float MAX_SPEED = 300f;
 //    public static final float MIN_DISTANCE = 75f;
-    public static final float VISION_RANGE = 40f;
     public static final float PI = (float) Math.PI;
     public static final int WRAP_PACMAN = 101;
     public static final int WRAP_SPHERE = 102;
+    public static final int UPDATE_DETERMINISTIC = 201;
+    public static final int UPDATE_TIMED = 202;
 
+    public static float visionRange = 40f;
+    public static String boidTexture = TextureController.BOID;
     public static int separationWeight = 60;
     public static int cohesionWeight = 20;
     public static int alignmentWeight = 1;
@@ -30,7 +33,7 @@ public class Boid {
     public Boid() {
         Random rand = new Random();
 
-        boidSprite = new Sprite(TextureController.getInstance().BOID);
+        boidSprite = new Sprite(TextureController.getInstance().getTexture(boidTexture));
         boidSprite.setOrigin(boidSprite.getWidth() / 2, boidSprite.getHeight() / 2);
         float hue = rand.nextFloat();
         float saturation = (rand.nextInt(2000) + 1000) / 2000f;
@@ -101,7 +104,7 @@ public class Boid {
         newVelocity.add(cohesion.scl(cohesionWeight * WEIGHT_SCALING_FACTOR));
         newVelocity.add(alignment.scl(alignmentWeight * WEIGHT_SCALING_FACTOR));
         if (newVelocity.len() > MAX_SPEED) newVelocity.scl(MAX_SPEED/newVelocity.len());
-        newPosition.add(newVelocity.cpy().scl(deltaTime));
+        newPosition.add(newVelocity.cpy().scl(BoidSimulator.updateMode == UPDATE_TIMED ? deltaTime : 0.02f));
         this.setPosition(newPosition);
         this.setVelocity(newVelocity);
     }
@@ -180,13 +183,13 @@ public class Boid {
         if (newPosition.x < 0) {
             newPosition.x += screenWidth * (int) -Math.floor(newPosition.x / screenWidth);
         }
-        if (newPosition.x > screenWidth) {
+        if (newPosition.x >= screenWidth) {
             newPosition.x -= screenWidth * (int) Math.floor(newPosition.x / screenWidth);
         }
         if (newPosition.y < 0) {
             newPosition.y += screenHeight * (int) -Math.floor(newPosition.y / screenHeight);
         }
-        if (newPosition.y > screenHeight) {
+        if (newPosition.y >= screenHeight) {
             newPosition.y -= screenHeight * (int) Math.floor(newPosition.y / screenHeight);
         }
         setPosition(newPosition);
@@ -228,9 +231,9 @@ public class Boid {
 
         // Set up the out of bounds parameters
         boolean oobLeft = newPosition.x < 0;
-        boolean oobRight = newPosition.x > screenWidth;
+        boolean oobRight = newPosition.x >= screenWidth;
         boolean oobBottom  = newPosition.y < 0;
-        boolean oobTop = newPosition.y > screenHeight;
+        boolean oobTop = newPosition.y >= screenHeight;
         boolean oobTopLeft = oobTop && oobLeft;
         boolean oobTopRight = oobTop && oobRight;
         boolean oobBottomLeft = oobBottom && oobLeft;

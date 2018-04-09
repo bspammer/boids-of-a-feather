@@ -16,11 +16,12 @@ import com.badlogic.gdx.utils.Disposable;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-	public static final int BOID_COUNT = 200;
     public static final int PLOT_UPDATE_PERIOD = 50; // update the plot every n ticks
-    private static final boolean PLOT_ENABLED = false;
-    private static final int WRAP_MODE = Boid.WRAP_PACMAN;
+    public static final boolean PLOT_ENABLED = false;
 
+    public static int boidCount = 200;
+    public static int wrapMode = Boid.WRAP_PACMAN;
+    public static int updateMode = Boid.UPDATE_DETERMINISTIC;
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
     private static boolean debugCorrelations = false;
@@ -28,15 +29,12 @@ public class BoidSimulator extends ApplicationAdapter {
     private static int correlationNumber = 40;
     private static ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
     protected static boolean debugBoidColorsOn = true;
-
     private static int plotUpdateCounter = 0;
-
-	private SpriteBatch sb;
-	private List<Boid> boidList = new ArrayList<>();
+    private SpriteBatch sb;
+    private List<Boid> boidList = new ArrayList<>();
     private List<Vector2> velocityList = new ArrayList<>();
     private Vector2 avgVelocity = new Vector2(0, 0);
     BitmapFont font;
-
     private static PlotFrame plotFrame;
 
 	@Override
@@ -53,7 +51,7 @@ public class BoidSimulator extends ApplicationAdapter {
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
-		for (int i = 0; i < BOID_COUNT; i++) {
+		for (int i = 0; i < boidCount; i++) {
 			boidList.add(new Boid());
 		}
 //        boidList.add(new Boid(new Vector2(440, 870), new Vector2(200, 0)));
@@ -174,10 +172,10 @@ public class BoidSimulator extends ApplicationAdapter {
             List<Vector2> neighbourPositions = new ArrayList<>();
             List<Vector2> neighbourVelocities = new ArrayList<>();
             for (Boid otherBoid : boidList) {
-                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, WRAP_MODE);
-                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, WRAP_MODE);
+                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, wrapMode);
+                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, wrapMode);
                 float distance = relativeDisplacement.len();
-                if (!boid.equals(otherBoid) && distance < Boid.VISION_RANGE) {
+                if (!boid.equals(otherBoid) && distance < Boid.visionRange) {
                     // We give the boid its relative displacement to the neighbouring boids
                     // This allows calculations to be done regardless of the screen wrapping
                     neighbourPositions.add(relativeDisplacement);
@@ -193,7 +191,7 @@ public class BoidSimulator extends ApplicationAdapter {
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
-            boid.performWrapping(WRAP_MODE);
+            boid.performWrapping(wrapMode);
             velocityList.add(boid.getVelocity());
         }
 
@@ -207,7 +205,7 @@ public class BoidSimulator extends ApplicationAdapter {
         if (debugCorrelations) {
             for (Boid boid : boidList) {
                 for (Boid otherBoid : boidList) {
-                    float distance = boid.relativeDisplacement(otherBoid, WRAP_MODE).len();
+                    float distance = boid.relativeDisplacement(otherBoid, wrapMode).len();
                     if (distance < correlationInterval * correlationNumber) {
                         Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
                         Vector2 otherBoidFluctuation = otherBoid.getVelocity().sub(avgVelocity);
@@ -248,7 +246,7 @@ public class BoidSimulator extends ApplicationAdapter {
                 int x = (int)boidPosition.x;
                 int y = (int)boidPosition.y;
                 circlePixmap.setColor(Color.GREEN);
-                circlePixmap.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.VISION_RANGE);
+                circlePixmap.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.visionRange);
 //                debugCircles.setColor(Color.RED);
 //                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.MIN_DISTANCE);
             }
