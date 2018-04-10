@@ -74,6 +74,12 @@ public class DesktopLauncher {
                 .hasArg()
                 .required(false)
                 .build();
+        Option boidSusceptibility = Option.builder()
+                .longOpt("boid-susceptibility")
+                .desc("How strongly the boids will react to their peers")
+                .hasArg()
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -86,6 +92,7 @@ public class DesktopLauncher {
         options.addOption(boundaryCondition);
         options.addOption(updateMode);
         options.addOption(boidSprite);
+        options.addOption(boidSusceptibility);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -98,6 +105,7 @@ public class DesktopLauncher {
             if (cmd.hasOption("cohesion")) Boid.cohesionWeight = Integer.valueOf(cmd.getOptionValue("cohesion"));
             if (cmd.hasOption("alignment")) Boid.alignmentWeight = Integer.valueOf(cmd.getOptionValue("alignment"));
             if (cmd.hasOption("boid-vision-range")) Boid.visionRange = Integer.valueOf(cmd.getOptionValue("boid-vision-range"));
+            if (cmd.hasOption("boid-susceptibility")) Boid.boidSusceptibility = Integer.valueOf(cmd.getOptionValue("boid-susceptibility"));
             if (cmd.hasOption("boundary-condition")) {
                 String boundCond = cmd.getOptionValue("boundary-condition");
                 if (boundCond.equals("sphere")) BoidSimulator.wrapMode = Boid.WRAP_SPHERE;

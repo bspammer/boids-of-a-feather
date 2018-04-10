@@ -23,6 +23,7 @@ public class Boid {
     public static int separationWeight = 60;
     public static int cohesionWeight = 20;
     public static int alignmentWeight = 1;
+    public static int boidSusceptibility = 20;
     public static final float WEIGHT_SCALING_FACTOR = 0.005f;
 
     private Vector2 position;
@@ -99,10 +100,12 @@ public class Boid {
             alignment.scl(1f / nearbyBoidVelocities.size());
         }
 
-        // Add the steering forces to current velocity, then calculate new position
-        newVelocity.add(separation.scl(separationWeight * WEIGHT_SCALING_FACTOR));
-        newVelocity.add(cohesion.scl(cohesionWeight * WEIGHT_SCALING_FACTOR));
-        newVelocity.add(alignment.scl(alignmentWeight * WEIGHT_SCALING_FACTOR));
+        Vector2 combinedSteer = new Vector2(0, 0);
+        combinedSteer.add(separation.scl(separationWeight * WEIGHT_SCALING_FACTOR));
+        combinedSteer.add(cohesion.scl(cohesionWeight * WEIGHT_SCALING_FACTOR));
+        combinedSteer.add(alignment.scl(alignmentWeight * WEIGHT_SCALING_FACTOR));
+        if (combinedSteer.len() > 0) combinedSteer.scl(boidSusceptibility/combinedSteer.len());
+        newVelocity.add(combinedSteer);
         if (newVelocity.len() > MAX_SPEED) newVelocity.scl(MAX_SPEED/newVelocity.len());
         newPosition.add(newVelocity.cpy().scl(BoidSimulator.updateMode == UPDATE_TIMED ? deltaTime : 0.02f));
         this.setPosition(newPosition);
