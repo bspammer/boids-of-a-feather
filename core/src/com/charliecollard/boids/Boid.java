@@ -6,12 +6,12 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.List;
 
-public class Boid {
+public class Boid implements Serializable {
     public static final float MAX_SPEED = 300f;
-//    public static final float MIN_DISTANCE = 75f;
     public static final float PI = (float) Math.PI;
     public static final int WRAP_PACMAN = 101;
     public static final int WRAP_SPHERE = 102;
@@ -28,8 +28,8 @@ public class Boid {
 
     private Vector2 position;
     private Vector2 velocity;
-    protected Sprite boidSprite;
-    protected Color spriteColor;
+    protected transient Sprite boidSprite;
+    protected transient Color spriteColor;
 
     public Boid() {
         Random rand = new Random();

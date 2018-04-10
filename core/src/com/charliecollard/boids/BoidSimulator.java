@@ -13,6 +13,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
 
+import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
@@ -22,6 +24,7 @@ public class BoidSimulator extends ApplicationAdapter {
     public static int boidCount = 200;
     public static int wrapMode = Boid.WRAP_PACMAN;
     public static int updateMode = Boid.UPDATE_DETERMINISTIC;
+    public static String filepathToLoad;
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
     private static boolean debugCorrelations = false;
@@ -51,9 +54,15 @@ public class BoidSimulator extends ApplicationAdapter {
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
-		for (int i = 0; i < boidCount; i++) {
-			boidList.add(new Boid());
-		}
+
+        // Create boids or load them from disk if specified
+        if (filepathToLoad == null) {
+            for (int i = 0; i < boidCount; i++) {
+                boidList.add(new Boid());
+            }
+        } else {
+            loadFromFile(filepathToLoad);
+        }
 //        boidList.add(new Boid(new Vector2(440, 870), new Vector2(200, 0)));
 //        boidList.add(new Boid(new Vector2(870, 440), new Vector2(0, -200)));
 //        boidList.add(new Boid(new Vector2(440, 440), new Vector2(400, 400)));
@@ -72,6 +81,16 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 if (keycode == Input.Keys.I) {
                     debugCorrelations = !debugCorrelations;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.W) {
+                    writeBoids();
+                    return true;
+                }
+
+                if (keycode == Input.Keys.R) {
+                    loadFromFile();
                     return true;
                 }
 
@@ -132,7 +151,7 @@ public class BoidSimulator extends ApplicationAdapter {
                     boidList.add(new Boid(boidPosition));
                     return true;
                 }
-                return true;
+                return false;
             }
 
             @Override
@@ -319,5 +338,58 @@ public class BoidSimulator extends ApplicationAdapter {
     private static void updatePlot(List<Float> distances) {
         UpdatePlotThread updatePlotThread = new UpdatePlotThread(plotFrame, distances);
         updatePlotThread.start();
+    }
+
+    private void writeBoids() {
+        Date now = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_hh-mm-ss");
+        String filePath = "./simulation-saves/" + dateFormat.format(now) + ".ser";
+	    try {
+	        File savesDir = new File("./simulation-saves");
+            if (!savesDir.exists()) {
+	            savesDir.mkdir();
+            }
+            FileOutputStream fileOut = new FileOutputStream(filePath);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(boidList);
+            out.close();
+            fileOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadFromFile() {
+        File folder = new File("./simulation-saves");
+        FilenameFilter filter = new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".ser");
+            }
+        };
+        File[] fileArray = folder.listFiles(filter);
+        if (fileArray != null && fileArray.length > 0) {
+            List<File> fileList = Arrays.asList(fileArray);
+            Collections.sort(fileList);
+            Collections.reverse(fileList);
+            loadFromFile(fileList.get(0).getPath());
+            System.out.println("Loaded file " + fileList.get(0).getPath());
+        } else {
+            System.out.println("Can't find any .ser files in the simulation-saves directory");
+        }
+    }
+
+    private void loadFromFile(String filepath) {
+	    try {
+            FileInputStream fileIn = new FileInputStream(filepath);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            List<Boid> newBoidList = (ArrayList<Boid>) in.readObject();
+            boidList.clear();
+            for (Boid boid : newBoidList) {
+                boidList.add(new Boid(boid.getPosition(), boid.getVelocity()));
+            }
+        } catch (IOException | ClassNotFoundException e) {
+	        e.printStackTrace();
+        }
     }
 }

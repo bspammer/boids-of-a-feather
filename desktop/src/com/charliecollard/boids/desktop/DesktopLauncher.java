@@ -80,6 +80,12 @@ public class DesktopLauncher {
                 .hasArg()
                 .required(false)
                 .build();
+        Option loadFile = Option.builder("l")
+                .longOpt("load-file")
+                .desc("Path to a file to restore simulation state to a previous point")
+                .hasArg()
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -93,6 +99,7 @@ public class DesktopLauncher {
         options.addOption(updateMode);
         options.addOption(boidSprite);
         options.addOption(boidSusceptibility);
+        options.addOption(loadFile);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -117,6 +124,9 @@ public class DesktopLauncher {
             if (cmd.hasOption("boid-sprite")) {
                 String sprite = cmd.getOptionValue("boid-sprite");
                 if (sprite.equals("particle")) Boid.boidTexture = TextureController.PARTICLE;
+            }
+            if (cmd.hasOption("load-file")) {
+                BoidSimulator.filepathToLoad = cmd.getOptionValue("load-file");
             }
         } catch (ParseException | NumberFormatException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
