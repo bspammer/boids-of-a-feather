@@ -13,8 +13,9 @@ import java.util.List;
 public class Boid implements Serializable {
     public static final float MAX_SPEED = 300f;
     public static final float PI = (float) Math.PI;
-    public static final int WRAP_PACMAN = 101;
-    public static final int WRAP_SPHERE = 102;
+    public static final int WRAP_SOLID = 101;
+    public static final int WRAP_PACMAN = 102;
+    public static final int WRAP_SPHERE = 103;
     public static final int UPDATE_DETERMINISTIC = 201;
     public static final int UPDATE_TIMED = 202;
 
@@ -126,6 +127,7 @@ public class Boid implements Serializable {
 
     public Vector2 relativeDisplacement(Vector2 otherPos, int mode) {
         switch (mode) {
+            case WRAP_SOLID: return solidRelativeDisplacement(otherPos);
             case WRAP_PACMAN: return pacmanRelativeDisplacement(otherPos);
             case WRAP_SPHERE: return sphereRelativeDisplacement(otherPos);
             default: return pacmanRelativeDisplacement(otherPos);
@@ -138,6 +140,7 @@ public class Boid implements Serializable {
 
     public Vector2 relativeVelocity(Vector2 otherPos, Vector2 otherVel, int mode) {
         switch (mode) {
+            case WRAP_SOLID: return otherVel;
             case WRAP_PACMAN: return otherVel;
             case WRAP_SPHERE: return sphereRelativeVelocity(otherPos, otherVel);
             default: return otherVel;
@@ -173,10 +176,36 @@ public class Boid implements Serializable {
 
     public void performWrapping(int mode) {
         switch (mode) {
+            case WRAP_SOLID: performSolidWrapping(); break;
             case WRAP_PACMAN: performPacmanWrapping(); break;
             case WRAP_SPHERE: performSphereWrapping(); break;
             default: performPacmanWrapping(); break;
         }
+    }
+
+    private void performSolidWrapping() {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 newPosition = getPosition();
+        Vector2 newVelocity = getVelocity();
+        if (newPosition.x < 0) {
+            newPosition.x = -newPosition.x;
+            newVelocity.scl(-1, 1);
+        }
+        if (newPosition.x > screenWidth) {
+            newPosition.x = screenWidth - (newPosition.x - screenWidth);
+            newVelocity.scl(-1, 1);
+        }
+        if (newPosition.y < 0) {
+            newPosition.y = -newPosition.y;
+            newVelocity.scl(1, -1);
+        }
+        if (newPosition.y > screenHeight) {
+            newPosition.y = screenHeight - (newPosition.y - screenHeight);
+            newVelocity.scl(1, -1);
+        }
+        setPosition(newPosition);
+        setVelocity(newVelocity);
     }
 
     private void performPacmanWrapping() {
@@ -196,6 +225,10 @@ public class Boid implements Serializable {
             newPosition.y -= screenHeight * (int) Math.floor(newPosition.y / screenHeight);
         }
         setPosition(newPosition);
+    }
+
+    private Vector2 solidRelativeDisplacement(Vector2 otherPos) {
+        return otherPos.cpy().sub(getPosition());
     }
 
     private Vector2 pacmanRelativeDisplacement(Vector2 otherPos) {

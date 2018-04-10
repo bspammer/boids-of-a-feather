@@ -116,10 +116,11 @@ public class DesktopLauncher {
             if (cmd.hasOption("boundary-condition")) {
                 String boundCond = cmd.getOptionValue("boundary-condition");
                 if (boundCond.equals("sphere")) BoidSimulator.wrapMode = Boid.WRAP_SPHERE;
+                if (boundCond.equals("solid")) BoidSimulator.wrapMode = Boid.WRAP_SOLID;
             }
             if (cmd.hasOption("update-mode")) {
-                String boundCond = cmd.getOptionValue("update-mode");
-                if (boundCond.equals("timed")) BoidSimulator.updateMode = Boid.UPDATE_TIMED;
+                String updateModeStr = cmd.getOptionValue("update-mode");
+                if (updateModeStr.equals("timed")) BoidSimulator.updateMode = Boid.UPDATE_TIMED;
             }
             if (cmd.hasOption("boid-sprite")) {
                 String sprite = cmd.getOptionValue("boid-sprite");
