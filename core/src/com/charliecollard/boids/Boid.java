@@ -16,6 +16,7 @@ public class Boid implements Serializable {
     public static final int WRAP_SOLID = 101;
     public static final int WRAP_PACMAN = 102;
     public static final int WRAP_SPHERE = 103;
+    public static final int WRAP_KLEIN = 104;
     public static final int UPDATE_DETERMINISTIC = 201;
     public static final int UPDATE_TIMED = 202;
 
@@ -130,6 +131,7 @@ public class Boid implements Serializable {
             case WRAP_SOLID: return solidRelativeDisplacement(otherPos);
             case WRAP_PACMAN: return pacmanRelativeDisplacement(otherPos);
             case WRAP_SPHERE: return sphereRelativeDisplacement(otherPos);
+            case WRAP_KLEIN: return kleinRelativeDisplacement(otherPos);
             default: return pacmanRelativeDisplacement(otherPos);
         }
     }
@@ -139,39 +141,14 @@ public class Boid implements Serializable {
     }
 
     public Vector2 relativeVelocity(Vector2 otherPos, Vector2 otherVel, int mode) {
+        otherVel = otherVel.cpy();
         switch (mode) {
             case WRAP_SOLID: return otherVel;
             case WRAP_PACMAN: return otherVel;
             case WRAP_SPHERE: return sphereRelativeVelocity(otherPos, otherVel);
+            case WRAP_KLEIN: return kleinRelativeVelocity(otherPos, otherVel);
             default: return otherVel;
         }
-    }
-
-    private Vector2 sphereRelativeVelocity(Vector2 otherPos, Vector2 otherVel) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-        Vector2 otherRelativeDisplacement = sphereRelativeDisplacement(otherPos);
-        Vector2 otherAbsolutePosition = getPosition().add(otherRelativeDisplacement);
-
-        // corners
-        if (    (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y > screenHeight)
-                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y > screenHeight)
-                || (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y < 0)
-                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y < 0)) {
-            return otherVel.rotate(180);
-        }
-
-        // left or right
-        if (otherAbsolutePosition.x < 0 || otherAbsolutePosition.x > screenWidth) {
-            return otherVel.rotate(90);
-        }
-
-        // up or down
-        if (otherAbsolutePosition.y < 0 || otherAbsolutePosition.y > screenHeight) {
-            return otherVel.rotate(-90);
-        }
-
-        return otherVel;
     }
 
     public void performWrapping(int mode) {
@@ -179,6 +156,7 @@ public class Boid implements Serializable {
             case WRAP_SOLID: performSolidWrapping(); break;
             case WRAP_PACMAN: performPacmanWrapping(); break;
             case WRAP_SPHERE: performSphereWrapping(); break;
+            case WRAP_KLEIN: performKleinWrapping(); break;
             default: performPacmanWrapping(); break;
         }
     }
@@ -212,51 +190,13 @@ public class Boid implements Serializable {
         int screenWidth = Gdx.graphics.getWidth();
         int screenHeight = Gdx.graphics.getHeight();
         Vector2 newPosition = getPosition();
-        if (newPosition.x < 0) {
+        if (newPosition.x < 0 || newPosition.x >= screenWidth) {
             newPosition.x += screenWidth * (int) -Math.floor(newPosition.x / screenWidth);
         }
-        if (newPosition.x >= screenWidth) {
-            newPosition.x -= screenWidth * (int) Math.floor(newPosition.x / screenWidth);
-        }
-        if (newPosition.y < 0) {
+        if (newPosition.y < 0 || newPosition.y >= screenHeight) {
             newPosition.y += screenHeight * (int) -Math.floor(newPosition.y / screenHeight);
         }
-        if (newPosition.y >= screenHeight) {
-            newPosition.y -= screenHeight * (int) Math.floor(newPosition.y / screenHeight);
-        }
         setPosition(newPosition);
-    }
-
-    private Vector2 solidRelativeDisplacement(Vector2 otherPos) {
-        return otherPos.cpy().sub(getPosition());
-    }
-
-    private Vector2 pacmanRelativeDisplacement(Vector2 otherPos) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-        Vector2 myPos = this.getPosition();
-        float xDisplacement, yDisplacement;
-        float leftHorDist = Math.abs(myPos.x-(otherPos.x-screenWidth));
-        float middleHorDist = Math.abs(myPos.x-otherPos.x);
-        float rightHorDist = Math.abs(myPos.x-(otherPos.x+screenWidth));
-        float bottomVerDist = Math.abs(myPos.y-(otherPos.y-screenHeight));
-        float middleVerDist = Math.abs(myPos.y-otherPos.y);
-        float topVerDist = Math.abs(myPos.y-(otherPos.y+screenHeight));
-        if (leftHorDist < middleHorDist && leftHorDist < rightHorDist) {
-            xDisplacement = myPos.x - (otherPos.x-screenWidth);
-        } else if (middleHorDist < leftHorDist && middleHorDist < rightHorDist) {
-            xDisplacement = myPos.x - otherPos.x;
-        } else {
-            xDisplacement = myPos.x - (otherPos.x + screenWidth);
-        }
-        if (bottomVerDist < middleVerDist && bottomVerDist < topVerDist) {
-            yDisplacement = myPos.y - (otherPos.y-screenHeight);
-        } else if (middleVerDist < bottomVerDist && middleVerDist < topVerDist) {
-            yDisplacement = myPos.y - otherPos.y;
-        } else {
-            yDisplacement = myPos.y - (otherPos.y + screenHeight);
-        }
-        return new Vector2(-xDisplacement, -yDisplacement);
     }
 
     private void performSphereWrapping() {
@@ -315,6 +255,63 @@ public class Boid implements Serializable {
         setVelocity(newVelocity);
     }
 
+    private void performKleinWrapping() {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 newPosition = getPosition();
+        Vector2 newVelocity = getVelocity();
+
+        // Set up the horizontal out of bounds parameters
+        boolean oobLeft = newPosition.x < 0;
+        boolean oobRight = newPosition.x >= 0;
+        if (oobLeft || oobRight) {
+            newPosition.x += screenWidth * (int) -Math.floor(newPosition.x / screenWidth);
+        }
+
+        // Set up the vertical out of bounds parameters
+        boolean oobBottom  = newPosition.y < 0;
+        boolean oobTop = newPosition.y >= screenHeight;
+        if (oobBottom || oobTop) {
+            newPosition.y += screenHeight * (int) -Math.floor(newPosition.y / screenHeight);
+            newPosition.sub(screenWidth - 2*(screenWidth - newPosition.x), 0);
+            newVelocity.scl(-1, 1);
+        }
+        setPosition(newPosition);
+        setVelocity(newVelocity);
+    }
+
+    private Vector2 solidRelativeDisplacement(Vector2 otherPos) {
+        return otherPos.cpy().sub(getPosition());
+    }
+
+    private Vector2 pacmanRelativeDisplacement(Vector2 otherPos) {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 myPos = this.getPosition();
+        float xDisplacement, yDisplacement;
+        float leftHorDist = Math.abs(myPos.x-(otherPos.x-screenWidth));
+        float middleHorDist = Math.abs(myPos.x-otherPos.x);
+        float rightHorDist = Math.abs(myPos.x-(otherPos.x+screenWidth));
+        float bottomVerDist = Math.abs(myPos.y-(otherPos.y-screenHeight));
+        float middleVerDist = Math.abs(myPos.y-otherPos.y);
+        float topVerDist = Math.abs(myPos.y-(otherPos.y+screenHeight));
+        if (leftHorDist < middleHorDist && leftHorDist < rightHorDist) {
+            xDisplacement = myPos.x - (otherPos.x-screenWidth);
+        } else if (middleHorDist < leftHorDist && middleHorDist < rightHorDist) {
+            xDisplacement = myPos.x - otherPos.x;
+        } else {
+            xDisplacement = myPos.x - (otherPos.x + screenWidth);
+        }
+        if (bottomVerDist < middleVerDist && bottomVerDist < topVerDist) {
+            yDisplacement = myPos.y - (otherPos.y-screenHeight);
+        } else if (middleVerDist < bottomVerDist && middleVerDist < topVerDist) {
+            yDisplacement = myPos.y - otherPos.y;
+        } else {
+            yDisplacement = myPos.y - (otherPos.y + screenHeight);
+        }
+        return new Vector2(-xDisplacement, -yDisplacement);
+    }
+
     private Vector2 sphereRelativeDisplacement(Vector2 otherPos) {
         int screenWidth = Gdx.graphics.getWidth();
         int screenHeight = Gdx.graphics.getHeight();
@@ -364,6 +361,84 @@ public class Boid implements Serializable {
             }
         });
         return closestPosition.sub(getPosition());
+    }
+
+    private Vector2 kleinRelativeDisplacement(Vector2 otherPos) {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 flippedHorizontally = otherPos.cpy().sub(screenWidth/2, 0).scl(-1, 1).add(screenWidth/2, 0);
+        List<Vector2> possiblePositions = new ArrayList<>();
+
+        // same universe
+        possiblePositions.add(otherPos.cpy());
+        // left universe
+        possiblePositions.add(otherPos.cpy().sub(screenWidth, 0));
+        // right universe
+        possiblePositions.add(otherPos.cpy().add(screenWidth, 0));
+        // bottom universe
+        possiblePositions.add(flippedHorizontally.cpy().add(0, -screenHeight));
+        // top universe
+        possiblePositions.add(flippedHorizontally.cpy().add(0, screenHeight));
+        // top-left universe
+        possiblePositions.add(flippedHorizontally.cpy().add(-screenWidth, screenHeight));
+        // top-right universe
+        possiblePositions.add(flippedHorizontally.cpy().add(screenWidth, screenHeight));
+        // bottom-left universe
+        possiblePositions.add(flippedHorizontally.cpy().add(-screenWidth, -screenHeight));
+        // bottom-right universe
+        possiblePositions.add(flippedHorizontally.cpy().add(screenWidth, -screenHeight));
+
+        Vector2 closestPosition = Collections.min(possiblePositions, new Comparator<Vector2>() {
+            @Override
+            public int compare(Vector2 position1, Vector2 position2) {
+                Vector2 position1Displacement = getPosition().sub(position1);
+                Vector2 position2Displacement = getPosition().sub(position2);
+                float distanceDifference =  position1Displacement.len() - position2Displacement.len();
+                if (distanceDifference == 0) return 0;
+                return distanceDifference < 0 ? -1 : 1;
+            }
+        });
+        return closestPosition.sub(getPosition());
+    }
+
+    private Vector2 sphereRelativeVelocity(Vector2 otherPos, Vector2 otherVel) {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 otherRelativeDisplacement = sphereRelativeDisplacement(otherPos);
+        Vector2 otherAbsolutePosition = getPosition().add(otherRelativeDisplacement);
+
+        // corners
+        if (    (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y > screenHeight)
+                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y > screenHeight)
+                || (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y < 0)
+                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y < 0)) {
+            return otherVel.rotate(180);
+        }
+
+        // left or right
+        if (otherAbsolutePosition.x < 0 || otherAbsolutePosition.x > screenWidth) {
+            return otherVel.rotate(90);
+        }
+
+        // up or down
+        if (otherAbsolutePosition.y < 0 || otherAbsolutePosition.y > screenHeight) {
+            return otherVel.rotate(-90);
+        }
+
+        return otherVel;
+    }
+
+
+    private Vector2 kleinRelativeVelocity(Vector2 otherPos, Vector2 otherVel) {
+        int screenHeight = Gdx.graphics.getHeight();
+        Vector2 otherRelativeDisplacement = kleinRelativeDisplacement(otherPos);
+        Vector2 otherAbsolutePosition = getPosition().add(otherRelativeDisplacement);
+
+        if (Math.floor(otherAbsolutePosition.y / screenHeight) == Math.floor(getPosition().y / screenHeight)) {
+            return otherVel;
+        } else {
+            return otherVel.scl(-1, 1);
+        }
     }
 
     public void setPosition(Vector2 newPos) {

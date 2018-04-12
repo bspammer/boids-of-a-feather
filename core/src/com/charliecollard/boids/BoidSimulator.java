@@ -4,10 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
@@ -191,16 +188,18 @@ public class BoidSimulator extends ApplicationAdapter {
             List<Vector2> neighbourPositions = new ArrayList<>();
             List<Vector2> neighbourVelocities = new ArrayList<>();
             for (Boid otherBoid : boidList) {
-                Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, wrapMode);
-                Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, wrapMode);
-                float distance = relativeDisplacement.len();
-                if (!boid.equals(otherBoid) && distance < Boid.visionRange) {
-                    // We give the boid its relative displacement to the neighbouring boids
-                    // This allows calculations to be done regardless of the screen wrapping
-                    neighbourPositions.add(relativeDisplacement);
-                    neighbourVelocities.add(relativeVelocity);
+                if (!boid.equals(otherBoid)) {
+                    Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, wrapMode);
+                    Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, wrapMode);
+                    float distance = relativeDisplacement.len();
+                    if (distance < Boid.visionRange) {
+                        // We give the boid its relative displacement to the neighbouring boids
+                        // This allows calculations to be done regardless of the screen wrapping
+                        neighbourPositions.add(relativeDisplacement);
+                        neighbourVelocities.add(relativeVelocity);
+                    }
+                    distances.add(distance);
                 }
-                distances.add(distance);
             }
             neighbourPositionMap.put(boid, neighbourPositions);
             neighbourVelocityMap.put(boid, neighbourVelocities);

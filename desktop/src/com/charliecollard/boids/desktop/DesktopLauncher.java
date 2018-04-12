@@ -117,6 +117,7 @@ public class DesktopLauncher {
                 String boundCond = cmd.getOptionValue("boundary-condition");
                 if (boundCond.equals("sphere")) BoidSimulator.wrapMode = Boid.WRAP_SPHERE;
                 if (boundCond.equals("solid")) BoidSimulator.wrapMode = Boid.WRAP_SOLID;
+                if (boundCond.equals("klein")) BoidSimulator.wrapMode = Boid.WRAP_KLEIN;
             }
             if (cmd.hasOption("update-mode")) {
                 String updateModeStr = cmd.getOptionValue("update-mode");
