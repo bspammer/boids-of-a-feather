@@ -90,6 +90,11 @@ public class DesktopLauncher {
                 .desc("Zoom out to show the surrounding virtual universes")
                 .required(false)
                 .build();
+        Option fullscreen = Option.builder("f")
+                .longOpt("fullscreen")
+                .desc("Fullscreen the application (it is recommended to set the width and height parameters to your screen size along with this option)")
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -105,6 +110,7 @@ public class DesktopLauncher {
         options.addOption(boidSusceptibility);
         options.addOption(loadFile);
         options.addOption(zoomOut);
+        options.addOption(fullscreen);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -136,6 +142,7 @@ public class DesktopLauncher {
                 BoidSimulator.filepathToLoad = cmd.getOptionValue("load-file");
             }
             if (cmd.hasOption("zoom-out")) BoidSimulator.zoomOut = true;
+            if (cmd.hasOption("fullscreen")) config.fullscreen = true;
         } catch (ParseException | NumberFormatException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
 		    helpFormatter.printHelp("desktop-1.0", "Create a boid simulation", options, "", true);
