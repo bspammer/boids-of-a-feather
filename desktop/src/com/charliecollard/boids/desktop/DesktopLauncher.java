@@ -2,9 +2,7 @@ package com.charliecollard.boids.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import com.charliecollard.boids.Boid;
-import com.charliecollard.boids.BoidSimulator;
-import com.charliecollard.boids.TextureController;
+import com.charliecollard.boids.*;
 import org.apache.commons.cli.*;
 
 public class DesktopLauncher {
@@ -86,6 +84,11 @@ public class DesktopLauncher {
                 .hasArg()
                 .required(false)
                 .build();
+        Option zoomOut = Option.builder("z")
+                .longOpt("zoom-out")
+                .desc("Zoom out to show the surrounding virtual universes")
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -100,6 +103,7 @@ public class DesktopLauncher {
         options.addOption(boidSprite);
         options.addOption(boidSusceptibility);
         options.addOption(loadFile);
+        options.addOption(zoomOut);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -115,9 +119,9 @@ public class DesktopLauncher {
             if (cmd.hasOption("boid-susceptibility")) Boid.boidSusceptibility = Integer.valueOf(cmd.getOptionValue("boid-susceptibility"));
             if (cmd.hasOption("boundary-condition")) {
                 String boundCond = cmd.getOptionValue("boundary-condition");
-                if (boundCond.equals("sphere")) BoidSimulator.wrapMode = Boid.WRAP_SPHERE;
-                if (boundCond.equals("solid")) BoidSimulator.wrapMode = Boid.WRAP_SOLID;
-                if (boundCond.equals("klein")) BoidSimulator.wrapMode = Boid.WRAP_KLEIN;
+                if (boundCond.equals("sphere")) BoidSimulator.wrappingScheme = new SphereWrappingScheme();
+                if (boundCond.equals("solid")) BoidSimulator.wrappingScheme = new SolidWrappingScheme();
+                if (boundCond.equals("klein")) BoidSimulator.wrappingScheme = new KleinWrappingScheme();
             }
             if (cmd.hasOption("update-mode")) {
                 String updateModeStr = cmd.getOptionValue("update-mode");
@@ -130,6 +134,7 @@ public class DesktopLauncher {
             if (cmd.hasOption("load-file")) {
                 BoidSimulator.filepathToLoad = cmd.getOptionValue("load-file");
             }
+            if (cmd.hasOption("zoom-out")) BoidSimulator.zoomOut = true;
         } catch (ParseException | NumberFormatException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
 		    helpFormatter.printHelp("desktop-1.0", "Create a boid simulation", options, "", true);

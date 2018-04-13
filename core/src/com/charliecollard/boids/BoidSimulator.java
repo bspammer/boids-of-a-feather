@@ -19,9 +19,10 @@ public class BoidSimulator extends ApplicationAdapter {
     public static final boolean PLOT_ENABLED = false;
 
     public static int boidCount = 200;
-    public static int wrapMode = Boid.WRAP_PACMAN;
+    public static WrappingScheme wrappingScheme = new PeriodicWrappingScheme();
     public static int updateMode = Boid.UPDATE_DETERMINISTIC;
     public static String filepathToLoad;
+    public static boolean zoomOut = false;
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
     private static boolean debugCorrelations = false;
@@ -36,6 +37,7 @@ public class BoidSimulator extends ApplicationAdapter {
     private Vector2 avgVelocity = new Vector2(0, 0);
     BitmapFont font;
     private static PlotFrame plotFrame;
+    private OrthographicCamera cam;
 
 	@Override
 	public void create() {
@@ -51,11 +53,14 @@ public class BoidSimulator extends ApplicationAdapter {
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
+        cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        cam.position.set(Gdx.graphics.getWidth()/2f, Gdx.graphics.getHeight()/2f, 0);
+        cam.update();
 
         // Create boids or load them from disk if specified
         if (filepathToLoad == null) {
             for (int i = 0; i < boidCount; i++) {
-                boidList.add(new Boid());
+                boidList.add(new Boid(wrappingScheme));
             }
         } else {
             loadFromFile(filepathToLoad);
@@ -78,6 +83,11 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 if (keycode == Input.Keys.I) {
                     debugCorrelations = !debugCorrelations;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.Y) {
+                    zoomOut = !zoomOut;
                     return true;
                 }
 
@@ -145,7 +155,7 @@ public class BoidSimulator extends ApplicationAdapter {
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
                     Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
-                    boidList.add(new Boid(boidPosition));
+                    boidList.add(new Boid(boidPosition, wrappingScheme));
                     return true;
                 }
                 return false;
@@ -159,7 +169,7 @@ public class BoidSimulator extends ApplicationAdapter {
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
                 Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
-                boidList.add(new Boid(boidPosition));
+                boidList.add(new Boid(boidPosition, wrappingScheme));
                 return true;
             }
 
@@ -189,8 +199,8 @@ public class BoidSimulator extends ApplicationAdapter {
             List<Vector2> neighbourVelocities = new ArrayList<>();
             for (Boid otherBoid : boidList) {
                 if (!boid.equals(otherBoid)) {
-                    Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid, wrapMode);
-                    Vector2 relativeVelocity = boid.relativeVelocity(otherBoid, wrapMode);
+                    Vector2 relativeDisplacement = boid.relativeDisplacement(otherBoid);
+                    Vector2 relativeVelocity = boid.relativeVelocity(otherBoid);
                     float distance = relativeDisplacement.len();
                     if (distance < Boid.visionRange) {
                         // We give the boid its relative displacement to the neighbouring boids
@@ -209,7 +219,7 @@ public class BoidSimulator extends ApplicationAdapter {
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
             boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
-            boid.performWrapping(wrapMode);
+            boid.performWrapping();
             velocityList.add(boid.getVelocity());
         }
 
@@ -223,7 +233,7 @@ public class BoidSimulator extends ApplicationAdapter {
         if (debugCorrelations) {
             for (Boid boid : boidList) {
                 for (Boid otherBoid : boidList) {
-                    float distance = boid.relativeDisplacement(otherBoid, wrapMode).len();
+                    float distance = boid.relativeDisplacement(otherBoid).len();
                     if (distance < correlationInterval * correlationNumber) {
                         Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
                         Vector2 otherBoidFluctuation = otherBoid.getVelocity().sub(avgVelocity);
@@ -249,12 +259,29 @@ public class BoidSimulator extends ApplicationAdapter {
 
 	@Override
 	public void render() {
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         update();
-		sb.begin();
+        cam.viewportWidth = screenWidth;
+        cam.viewportHeight = screenHeight;
+        cam.update();
+        if (zoomOut) {
+            cam.viewportWidth = screenWidth*3;
+            cam.viewportHeight = screenHeight*3;
+            cam.update();
+            DebugShapeRenderer.drawLine(new Vector2(0, -screenHeight), new Vector2(0, 2 * screenHeight), 1, Color.WHITE, cam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(screenWidth, -screenHeight), new Vector2(screenWidth, 2 * screenHeight), 1, Color.WHITE, cam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, 0), new Vector2(2 * screenWidth, 0), 1, Color.WHITE, cam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, screenHeight), new Vector2(2 * screenWidth, screenHeight), 1, Color.WHITE, cam.combined);
+        }
+
+        sb.setProjectionMatrix(cam.combined);
+        sb.begin();
         List<Disposable> trashcan = new ArrayList<>();
+
         if (debugCircles) {
             Pixmap circlePixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
             trashcan.add(circlePixmap);
@@ -385,7 +412,7 @@ public class BoidSimulator extends ApplicationAdapter {
             List<Boid> newBoidList = (ArrayList<Boid>) in.readObject();
             boidList.clear();
             for (Boid boid : newBoidList) {
-                boidList.add(new Boid(boid.getPosition(), boid.getVelocity()));
+                boidList.add(new Boid(boid.getPosition(), boid.getVelocity(), wrappingScheme));
             }
         } catch (IOException | ClassNotFoundException e) {
 	        e.printStackTrace();
