@@ -35,6 +35,7 @@ public class BoidSimulator extends ApplicationAdapter {
     private List<Boid> boidList = new ArrayList<>();
     private List<Vector2> velocityList = new ArrayList<>();
     private Vector2 avgVelocity = new Vector2(0, 0);
+    private float polarization = 0;
     BitmapFont font;
     private static PlotFrame plotFrame;
     private OrthographicCamera cam;
@@ -233,12 +234,18 @@ public class BoidSimulator extends ApplicationAdapter {
             velocityList.add(boid.getVelocity());
         }
 
-        // Recalculate the average velocity for the whole system
+        // Recalculate the average velocity and polarization for the whole system
         avgVelocity = new Vector2(0, 0);
+        Vector2 sumOfNormalized = new Vector2(0, 0);
         for (Vector2 boidVelocity : velocityList) {
             avgVelocity.add(boidVelocity);
+            sumOfNormalized.add(boidVelocity.nor());
         }
-        avgVelocity.scl(1f/boidList.size());
+        if (velocityList.size() > 0) {
+            avgVelocity.scl(1f/velocityList.size());
+            sumOfNormalized.scl(1f/velocityList.size());
+            polarization = sumOfNormalized.len();
+        }
 
         if (debugCorrelations) {
             for (Boid boid : boidList) {
@@ -324,7 +331,8 @@ public class BoidSimulator extends ApplicationAdapter {
         cam.viewportHeight = screenHeight;
         cam.update();
         sb.setProjectionMatrix(cam.combined);
-        font.draw(sb, boidList.size() + " boids", 10, 100);
+        font.draw(sb, boidList.size() + " boids", 10, screenHeight-20);
+        font.draw(sb, String.format("Polarization: %.3f", polarization), 10, 100);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);
         font.draw(sb, "Cohesion:", 10, 40);

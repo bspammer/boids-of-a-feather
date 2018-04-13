@@ -11,6 +11,7 @@ public class DesktopLauncher {
         config.width = 880;
         //		config.width = 880;
         config.height = 880;
+        config.resizable = false;
 
         Option width = Option.builder("w")
                 .longOpt("width")
