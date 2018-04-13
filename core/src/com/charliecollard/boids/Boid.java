@@ -30,6 +30,9 @@ public class Boid implements Serializable {
     protected transient Sprite boidSprite;
     protected transient Color spriteColor;
     protected transient WrappingScheme wrappingScheme;
+    protected Vector2 lastSeparation;
+    protected Vector2 lastCohesion;
+    protected Vector2 lastAlignment;
 
     public Boid() {
         this(new PeriodicWrappingScheme());
@@ -107,8 +110,11 @@ public class Boid implements Serializable {
 
         Vector2 combinedSteer = new Vector2(0, 0);
         combinedSteer.add(separation.scl(separationWeight * WEIGHT_SCALING_FACTOR));
+        lastSeparation = separation;
         combinedSteer.add(cohesion.scl(cohesionWeight * WEIGHT_SCALING_FACTOR));
+        lastCohesion = cohesion;
         combinedSteer.add(alignment.scl(alignmentWeight * WEIGHT_SCALING_FACTOR));
+        lastAlignment = alignment;
         if (combinedSteer.len() > 0) combinedSteer.scl(boidSusceptibility/combinedSteer.len());
         newVelocity.add(combinedSteer);
         if (newVelocity.len() > MAX_SPEED) newVelocity.scl(MAX_SPEED/newVelocity.len());

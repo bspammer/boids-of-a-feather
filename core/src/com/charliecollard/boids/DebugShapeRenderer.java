@@ -59,6 +59,11 @@ public class DebugShapeRenderer {
         }
     }
 
+    public static void batchLine(Vector2 start, Vector2 end, Color color) {
+        shapeRenderer.setColor(color);
+        batchLine(start, end);
+    }
+
     public static void endBatch() {
         if (batching) {
             shapeRenderer.end();

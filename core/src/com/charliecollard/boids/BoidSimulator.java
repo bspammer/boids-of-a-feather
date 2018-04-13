@@ -26,9 +26,11 @@ public class BoidSimulator extends ApplicationAdapter {
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
     private static boolean debugCorrelations = false;
+    private static boolean debugInfluences = false;
     private static int correlationInterval = 10;
     private static int correlationNumber = 40;
     private static ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
+    protected static OrthographicCamera cam;
     protected static boolean debugBoidColorsOn = true;
     private static int plotUpdateCounter = 0;
     private SpriteBatch sb;
@@ -38,7 +40,6 @@ public class BoidSimulator extends ApplicationAdapter {
     private float polarization = 0;
     BitmapFont font;
     private static PlotFrame plotFrame;
-    private OrthographicCamera cam;
 
 	@Override
 	public void create() {
@@ -84,6 +85,11 @@ public class BoidSimulator extends ApplicationAdapter {
 
                 if (keycode == Input.Keys.I) {
                     debugCorrelations = !debugCorrelations;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.U) {
+                    debugInfluences = !debugInfluences;
                     return true;
                 }
 
@@ -304,15 +310,20 @@ public class BoidSimulator extends ApplicationAdapter {
         }
 
         if (debugFluctuations) {
-            DebugShapeRenderer.startBatch(Color.CYAN, 1, cam.combined);
+            DebugShapeRenderer.startBatch(Color.PINK, 1, cam.combined);
             for (Boid boid : boidList) {
                 Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
-                float fluctuationSize = boidFluctuation.len();
-                float angle = boidFluctuation.angleRad();
-                Vector2 pos2 = new Vector2(boid.getPosition().add(
-                        (int) (fluctuationSize*Math.cos(angle)),
-                        (int) (fluctuationSize*Math.sin(angle))));
-                DebugShapeRenderer.batchLine(boid.getPosition(), pos2);
+                DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boidFluctuation));
+            }
+            DebugShapeRenderer.endBatch();
+        }
+
+        if (debugInfluences) {
+            DebugShapeRenderer.startBatch(Color.YELLOW, 1, cam.combined);
+            for (Boid boid : boidList) {
+                DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boid.lastSeparation.cpy().scl(10)), Color.YELLOW);
+                DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boid.lastCohesion.cpy().scl(20)), Color.MAGENTA);
+                DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boid.lastAlignment.cpy().scl(20)), Color.CYAN);
             }
             DebugShapeRenderer.endBatch();
         }
