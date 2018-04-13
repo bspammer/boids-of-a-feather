@@ -155,6 +155,11 @@ public class BoidSimulator extends ApplicationAdapter {
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
                     Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                    if (zoomOut) {
+                        float screenWidth = Gdx.graphics.getWidth();
+                        float screenHeight = Gdx.graphics.getHeight();
+                        boidPosition.add(screenWidth/2, screenHeight/2).scl(3).sub(screenWidth/2, screenHeight/2);
+                    }
                     boidList.add(new Boid(boidPosition, wrappingScheme));
                     return true;
                 }
@@ -169,6 +174,11 @@ public class BoidSimulator extends ApplicationAdapter {
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
                 Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                if (zoomOut) {
+                    float screenWidth = Gdx.graphics.getWidth();
+                    float screenHeight = Gdx.graphics.getHeight();
+                    boidPosition.add(screenWidth/2, screenHeight/2).scl(3).sub(screenWidth/2, screenHeight/2);
+                }
                 boidList.add(new Boid(boidPosition, wrappingScheme));
                 return true;
             }
@@ -268,7 +278,6 @@ public class BoidSimulator extends ApplicationAdapter {
         cam.viewportWidth = screenWidth;
         cam.viewportHeight = screenHeight;
         cam.update();
-
         if (zoomOut) {
             cam.viewportWidth = screenWidth*3;
             cam.viewportHeight = screenHeight*3;
@@ -301,7 +310,6 @@ public class BoidSimulator extends ApplicationAdapter {
             DebugShapeRenderer.endBatch();
         }
 
-
         sb.setProjectionMatrix(cam.combined);
         sb.begin();
         List<Disposable> trashcan = new ArrayList<>();
@@ -310,6 +318,12 @@ public class BoidSimulator extends ApplicationAdapter {
             boid.render(sb);
         }
 
+
+        // Reset the camera before drawing the text
+        cam.viewportWidth = screenWidth;
+        cam.viewportHeight = screenHeight;
+        cam.update();
+        sb.setProjectionMatrix(cam.combined);
         font.draw(sb, boidList.size() + " boids", 10, 100);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);
