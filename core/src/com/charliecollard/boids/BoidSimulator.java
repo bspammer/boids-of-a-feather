@@ -268,6 +268,7 @@ public class BoidSimulator extends ApplicationAdapter {
         cam.viewportWidth = screenWidth;
         cam.viewportHeight = screenHeight;
         cam.update();
+
         if (zoomOut) {
             cam.viewportWidth = screenWidth*3;
             cam.viewportHeight = screenHeight*3;
@@ -278,52 +279,35 @@ public class BoidSimulator extends ApplicationAdapter {
             DebugShapeRenderer.drawLine(new Vector2(-screenWidth, screenHeight), new Vector2(2 * screenWidth, screenHeight), 1, Color.WHITE, cam.combined);
         }
 
+        if (debugCircles) {
+            DebugShapeRenderer.startBatch(Color.GREEN, 1, cam.combined);
+            for (Boid boid : boidList) {
+                DebugShapeRenderer.batchCircle(boid.getPosition(), Boid.visionRange);
+            }
+            DebugShapeRenderer.endBatch();
+        }
+
+        if (debugFluctuations) {
+            DebugShapeRenderer.startBatch(Color.CYAN, 1, cam.combined);
+            for (Boid boid : boidList) {
+                Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
+                float fluctuationSize = boidFluctuation.len();
+                float angle = boidFluctuation.angleRad();
+                Vector2 pos2 = new Vector2(boid.getPosition().add(
+                        (int) (fluctuationSize*Math.cos(angle)),
+                        (int) (fluctuationSize*Math.sin(angle))));
+                DebugShapeRenderer.batchLine(boid.getPosition(), pos2);
+            }
+            DebugShapeRenderer.endBatch();
+        }
+
+
         sb.setProjectionMatrix(cam.combined);
         sb.begin();
         List<Disposable> trashcan = new ArrayList<>();
 
-        if (debugCircles) {
-            Pixmap circlePixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
-            trashcan.add(circlePixmap);
-
-            for (Boid boid : boidList) {
-                Vector2 boidPosition = boid.getPosition();
-                int x = (int)boidPosition.x;
-                int y = (int)boidPosition.y;
-                circlePixmap.setColor(Color.GREEN);
-                circlePixmap.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.visionRange);
-//                debugCircles.setColor(Color.RED);
-//                debugCircles.drawCircle(x, Gdx.graphics.getHeight()-y, (int)Boid.MIN_DISTANCE);
-            }
-            Texture debugCircleTexture = new Texture(circlePixmap);
-            trashcan.add(debugCircleTexture);
-            sb.draw(debugCircleTexture, 0, 0);
-        }
-
-        if (debugFluctuations) {
-            Pixmap fluctuationPixmap = new Pixmap(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
-            trashcan.add(fluctuationPixmap);
-
-            for (Boid boid : boidList) {
-                Vector2 boidPosition = boid.getPosition();
-                Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
-                float fluctuationSize = boidFluctuation.len();
-                float angle = boidFluctuation.angleRad();
-                int x = (int) boidPosition.x;
-                int y = (int) (Gdx.graphics.getHeight() - boidPosition.y);
-                int x2 = (int) (x + (fluctuationSize * Math.cos(angle)));
-                int y2 = (int) (y - (fluctuationSize * Math.sin(angle)));
-                fluctuationPixmap.setColor(Color.CYAN);
-                fluctuationPixmap.drawLine(x, y, x2, y2);
-                boid.render(sb);
-            }
-            Texture fluctuationTexture = new Texture(fluctuationPixmap);
-            trashcan.add(fluctuationTexture);
-            sb.draw(fluctuationTexture, 0, 0);
-        } else {
-            for (Boid boid : boidList) {
-                boid.render(sb);
-            }
+        for (Boid boid : boidList) {
+            boid.render(sb);
         }
 
         font.draw(sb, boidList.size() + " boids", 10, 100);
