@@ -99,6 +99,11 @@ public class DesktopLauncher {
                 .desc("Run without rendering the simulation")
                 .required(false)
                 .build();
+        Option showCorrelations = Option.builder()
+                .longOpt("show-correlations")
+                .desc("Show the correlation plot")
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -116,6 +121,7 @@ public class DesktopLauncher {
         options.addOption(zoomOut);
         options.addOption(fullscreen);
         options.addOption(headless);
+        options.addOption(showCorrelations);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -157,6 +163,7 @@ public class DesktopLauncher {
             if (cmd.hasOption("zoom-out")) BoidSimulator.zoomOut = true;
             if (cmd.hasOption("fullscreen")) config.fullscreen = true;
             if (cmd.hasOption("headless")) BoidSimulator.renderingOn = false;
+            if (cmd.hasOption("show-correlations")) BoidSimulator.debugCorrelations = true;
         } catch (ParseException | NumberFormatException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
 		    helpFormatter.printHelp("desktop-1.0", "Create a boid simulation", options, "", true);

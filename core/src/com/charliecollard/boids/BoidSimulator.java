@@ -17,7 +17,6 @@ import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
     public static final int PLOT_UPDATE_PERIOD = 1; // update the plot every n ticks
-    public static final boolean PLOT_ENABLED = true;
     public static int simulationWidth = 880;
     public static int simulationHeight = 880;
     public static int updateCount = 0;
@@ -29,7 +28,7 @@ public class BoidSimulator extends ApplicationAdapter {
     public static boolean zoomOut = false;
     private static boolean debugCircles = false;
     private static boolean debugFluctuations = false;
-    private static boolean debugCorrelations = false;
+    public static boolean debugCorrelations = false;
     private static boolean debugInfluences = false;
     protected static boolean debugBoidColorsOn = true;
     public static boolean renderingOn = true;
@@ -45,7 +44,7 @@ public class BoidSimulator extends ApplicationAdapter {
     private static PlotFrame plotFrame;
 
     public BoidSimulator() {
-        if (PLOT_ENABLED) {
+        if (debugCorrelations) {
             plotFrame = new PlotFrame("Plot frame");
             plotFrame.setVisible(true);
         }
