@@ -4,22 +4,22 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.ui.ApplicationFrame;
 import org.jfree.chart.ui.UIUtils;
-import org.jfree.data.category.CategoryDataset;
-import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.Value;
+import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.data.xy.XYDataset;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 
 public class PlotFrame extends ApplicationFrame {
-    DefaultCategoryDataset dataset;
-    JFreeChart chart;
-    ChartPanel chartPanel;
-    List<Integer> buckets = new ArrayList<>();
+    private DefaultXYDataset dataset;
+    private ChartPanel chartPanel;
+    private List<Integer> buckets = new ArrayList<>();
 
     public PlotFrame(String title) {
         super(title);
@@ -27,72 +27,50 @@ public class PlotFrame extends ApplicationFrame {
             buckets.add(i*10);
         }
 
-        dataset = createDataset();
-        chart = createChart(dataset);
+        dataset = new DefaultXYDataset();
+        JFreeChart chart = createChart(dataset);
         chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new Dimension(500, 270));
         setContentPane(chartPanel);
-        UIUtils.positionFrameOnScreen(this, 0.08, 0.3);
+        UIUtils.positionFrameOnScreen(this, 0,0);
         this.pack();
     }
 
-    private static DefaultCategoryDataset createDataset() {
-        return new DefaultCategoryDataset();
-    }
-
-    private static JFreeChart createChart(CategoryDataset dataset) {
-        JFreeChart chart = ChartFactory.createAreaChart(
-                "Separation Distribution",
+    private static JFreeChart createChart(XYDataset dataset) {
+        JFreeChart chart = ChartFactory.createScatterPlot(
+                "Correlations against distance",
                 "Distance",
-                "Density",
-                dataset,
-                PlotOrientation.VERTICAL,
-                true,
-                true,
-                false
+                "Correlation",
+                dataset
         );
-        chart.removeLegend();
+
         chart.setBackgroundPaint(Color.WHITE);
-        CategoryPlot plot = chart.getCategoryPlot();
+        XYPlot plot = chart.getXYPlot();
         plot.setForegroundAlpha(1f);
         plot.setBackgroundPaint(Color.WHITE);
         plot.setDomainGridlinesVisible(true);
-        plot.setDomainGridlinePaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.GRAY);
         plot.setRangeGridlinesVisible(true);
-        plot.setRangeGridlinePaint(Color.WHITE);
-        ValueAxis rangeAxis = plot.getRangeAxis();
-        rangeAxis.setRange(0, 1000);
-        rangeAxis.setMinorTickMarksVisible(false);
+        plot.setRangeGridlinePaint(Color.GRAY);
+        plot.getDomainAxis().setAutoRange(true);
+        plot.getRangeAxis().setAutoRange(true);
+        ValueMarker marker = new ValueMarker(0);
+        marker.setPaint(Color.black);
+        plot.addDomainMarker(marker);
+        plot.addRangeMarker(marker);
 
         return chart;
     }
 
-    public void updateData(List<Float> distances) {
+    public void updateData(double[] xs, double[] ys) {
         chartPanel.setVisible(false);
-        dataset.clear();
-
-        for (int i = 0; i < buckets.size(); i++) {
-            int bucketMax = buckets.get(i);
-            int total = 0;
-
-            List<Integer> toRemove = new ArrayList<>();
-            for (int j = distances.size() - 1; j >= 0; j--) {
-                float distance = distances.get(j);
-                if (distance < bucketMax) {
-                    total += 1;
-                    toRemove.add(j);
-                }
-            }
-            for (int remove : toRemove) {
-                distances.remove(remove);
-            }
-            dataset.addValue((Number) total, 0, i);
-        }
+        dataset.removeSeries(0);
+        dataset.addSeries(0, new double[][] {xs, ys});
         chartPanel.setVisible(true);
     }
 
     @Override
     public String toString() {
-        return "Separation Distribution Plot";
+        return "Correlation plot";
     }
 }

@@ -16,8 +16,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class BoidSimulator extends ApplicationAdapter {
-    public static final int PLOT_UPDATE_PERIOD = 50; // update the plot every n ticks
-    public static final boolean PLOT_ENABLED = false;
+    public static final int PLOT_UPDATE_PERIOD = 1; // update the plot every n ticks
+    public static final boolean PLOT_ENABLED = true;
 
     public static int boidCount = 200;
     public static WrappingScheme wrappingScheme = new PeriodicWrappingScheme();
@@ -28,12 +28,9 @@ public class BoidSimulator extends ApplicationAdapter {
     private static boolean debugFluctuations = false;
     private static boolean debugCorrelations = false;
     private static boolean debugInfluences = false;
-    private static int correlationInterval = 10;
-    private static int correlationNumber = 40;
-    private static ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
+    protected static boolean debugBoidColorsOn = true;
     protected static OrthographicCamera cam;
     protected static OrthographicCamera zoomedOutCam;
-    protected static boolean debugBoidColorsOn = true;
     private static int plotUpdateCounter = 0;
     private SpriteBatch sb;
     private List<Boid> boidList = new ArrayList<>();
@@ -43,17 +40,24 @@ public class BoidSimulator extends ApplicationAdapter {
     BitmapFont font;
     private static PlotFrame plotFrame;
 
-	@Override
-	public void create() {
+    public BoidSimulator() {
         if (PLOT_ENABLED) {
             plotFrame = new PlotFrame("Plot frame");
             plotFrame.setVisible(true);
         }
 
-        for (int i=0; i<correlationNumber; i++) {
-            correlationLists.add(new ArrayList<Float>());
+        // Create boids or load them from disk if specified
+        if (filepathToLoad == null) {
+            for (int i = 0; i < boidCount; i++) {
+                boidList.add(new Boid(wrappingScheme));
+            }
+        } else {
+            loadFromFile(filepathToLoad);
         }
+    }
 
+	@Override
+	public void create() {
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
@@ -65,15 +69,6 @@ public class BoidSimulator extends ApplicationAdapter {
         zoomedOutCam.viewportWidth = Gdx.graphics.getWidth()*3;
         zoomedOutCam.viewportHeight = Gdx.graphics.getHeight()*3;
         zoomedOutCam.update();
-
-        // Create boids or load them from disk if specified
-        if (filepathToLoad == null) {
-            for (int i = 0; i < boidCount; i++) {
-                boidList.add(new Boid(wrappingScheme));
-            }
-        } else {
-            loadFromFile(filepathToLoad);
-        }
 //        boidList.add(new Boid(new Vector2(440, 870), new Vector2(200, 0)));
 //        boidList.add(new Boid(new Vector2(870, 440), new Vector2(0, -200)));
 //        boidList.add(new Boid(new Vector2(440, 440), new Vector2(400, 400)));
@@ -213,9 +208,6 @@ public class BoidSimulator extends ApplicationAdapter {
         Map<Boid, List<Vector2>> neighbourPositionMap = new HashMap<>();
         Map<Boid, List<Vector2>> neighbourVelocityMap = new HashMap<>();
         List<Float> distances = new ArrayList<>();
-        for (ArrayList<Float> list : correlationLists) {
-            list.clear();
-        }
         // For each boid, discover all close boids without updating them
         // This way we update all boids in synchronisation
         for (Boid boid : boidList) {
@@ -260,27 +252,10 @@ public class BoidSimulator extends ApplicationAdapter {
             polarization = sumOfNormalized.len();
         }
 
-        if (debugCorrelations) {
-            for (Boid boid : boidList) {
-                for (Boid otherBoid : boidList) {
-                    float distance = boid.relativeDisplacement(otherBoid).len();
-                    if (distance < correlationInterval * correlationNumber) {
-                        Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
-                        Vector2 otherBoidFluctuation = otherBoid.getVelocity().sub(avgVelocity);
-                        float dotProduct = boidFluctuation.dot(otherBoidFluctuation);
-                        int index = (int) Math.floor(distance / correlationInterval);
-                        ArrayList<Float> list = correlationLists.get(index);
-                        list.add(dotProduct);
-                        correlationLists.set(index, list);
-                    }
-                }
-            }
-        }
-
         // Update the plot
-        if (plotFrame != null) {
+        if (debugCorrelations && plotFrame != null) {
             if (plotUpdateCounter == 0) {
-                updatePlot(distances);
+                updatePlot(boidList, avgVelocity);
             }
             plotUpdateCounter += 1;
             plotUpdateCounter %= PLOT_UPDATE_PERIOD;
@@ -289,12 +264,13 @@ public class BoidSimulator extends ApplicationAdapter {
 
 	@Override
 	public void render() {
+        update();
+
         int screenWidth = Gdx.graphics.getWidth();
         int screenHeight = Gdx.graphics.getHeight();
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        update();
         if (zoomOut) {
             DebugShapeRenderer.drawLine(new Vector2(0, -screenHeight), new Vector2(0, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
             DebugShapeRenderer.drawLine(new Vector2(screenWidth, -screenHeight), new Vector2(screenWidth, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
@@ -348,18 +324,6 @@ public class BoidSimulator extends ApplicationAdapter {
         font.draw(sb, "Alignment:", 10, 20);
         font.draw(sb, String.format("%.3f", Boid.alignmentWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 20);
 
-        if (debugCorrelations) {
-            ArrayList<Float> sums = new ArrayList<>();
-            for (ArrayList<Float> list : correlationLists) {
-                float sum = 0;
-                for (Float f : list) {
-                    sum += f;
-                }
-                if (list.size() > 0) sum /= list.size();
-                sums.add(sum);
-            }
-            System.out.println(sums.toString());
-        }
 		sb.end();
 
         // Take out the trash
@@ -375,9 +339,18 @@ public class BoidSimulator extends ApplicationAdapter {
 		TextureController.getInstance().disposeAllTextures();
 	}
 
-    private static void updatePlot(List<Float> distances) {
-        UpdatePlotThread updatePlotThread = new UpdatePlotThread(plotFrame, distances);
-        updatePlotThread.start();
+    private static void updatePlot(List<Boid> boidList, Vector2 avgVelocity) {
+	    // Only update the plot if the previous thread isn't still running
+	    if (UpdatePlotThread.mThread == null || !UpdatePlotThread.mThread.isAlive()) {
+            List<Vector2> positions = new ArrayList<>();
+            List<Vector2> velocities = new ArrayList<>();
+            for (Boid boid : boidList) {
+                positions.add(boid.getPosition());
+                velocities.add(boid.getVelocity());
+            }
+            UpdatePlotThread updatePlotThread = new UpdatePlotThread(plotFrame, positions, velocities, avgVelocity);
+            updatePlotThread.start();
+        }
     }
 
     private void writeBoids() {
