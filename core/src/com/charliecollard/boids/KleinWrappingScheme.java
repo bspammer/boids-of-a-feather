@@ -63,7 +63,7 @@ public class KleinWrappingScheme extends WrappingScheme {
     public Vector2 relativeVelocity(Vector2 myPos, Vector2 otherPos, Vector2 otherVel) {
         int screenHeight = Gdx.graphics.getHeight();
         Vector2 otherRelativeDisplacement = relativeDisplacement(myPos, otherPos);
-        Vector2 otherAbsolutePosition = myPos.add(otherRelativeDisplacement);
+        Vector2 otherAbsolutePosition = myPos.cpy().add(otherRelativeDisplacement);
 
         if (Math.floor(otherAbsolutePosition.y / screenHeight) == Math.floor(myPos.y / screenHeight)) {
             return otherVel;
