@@ -7,6 +7,9 @@ import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.charliecollard.boids.BoidSimulator.simulationHeight;
+import static com.charliecollard.boids.BoidSimulator.simulationWidth;
+
 public class SolidWrappingScheme extends WrappingScheme {
     @Override
     public Vector2 relativeDisplacement(Boid from, Boid to) {
@@ -36,19 +39,17 @@ public class SolidWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedVelocity(Vector2 position, Vector2 currentVelocity) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 newVelocity = currentVelocity.cpy();
         if (position.x < 0) {
             newVelocity.scl(-1, 1);
         }
-        if (position.x > screenWidth) {
+        if (position.x > simulationWidth) {
             newVelocity.scl(-1, 1);
         }
         if (position.y < 0) {
             newVelocity.scl(1, -1);
         }
-        if (position.y > screenHeight) {
+        if (position.y > simulationHeight) {
             newVelocity.scl(1, -1);
         }
         return newVelocity;
@@ -56,20 +57,18 @@ public class SolidWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedPosition(Vector2 positionToWrap) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 newPosition = positionToWrap.cpy();
         if (newPosition.x < 0) {
             newPosition.x = -newPosition.x;
         }
-        if (newPosition.x > screenWidth) {
-            newPosition.x = screenWidth - (newPosition.x - screenWidth);
+        if (newPosition.x > simulationWidth) {
+            newPosition.x = simulationWidth - (newPosition.x - simulationWidth);
         }
         if (newPosition.y < 0) {
             newPosition.y = -newPosition.y;
         }
-        if (newPosition.y > screenHeight) {
-            newPosition.y = screenHeight - (newPosition.y - screenHeight);
+        if (newPosition.y > simulationHeight) {
+            newPosition.y = simulationHeight - (newPosition.y - simulationHeight);
         }
         return newPosition;
     }

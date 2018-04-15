@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.charliecollard.boids.BoidSimulator.simulationHeight;
+import static com.charliecollard.boids.BoidSimulator.simulationWidth;
+
 public class KleinWrappingScheme extends WrappingScheme {
     @Override
     public Vector2 relativeDisplacement(Boid from, Boid to) {
@@ -17,29 +20,27 @@ public class KleinWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 relativeDisplacement(final Vector2 from, Vector2 to) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-        Vector2 flippedHorizontally = to.cpy().sub(screenWidth/2, 0).scl(-1, 1).add(screenWidth/2, 0);
+        Vector2 flippedHorizontally = to.cpy().sub(simulationWidth/2, 0).scl(-1, 1).add(simulationWidth/2, 0);
         List<Vector2> possiblePositions = new ArrayList<>();
 
         // same universe
         possiblePositions.add(to.cpy());
         // left universe
-        possiblePositions.add(to.cpy().sub(screenWidth, 0));
+        possiblePositions.add(to.cpy().sub(simulationWidth, 0));
         // right universe
-        possiblePositions.add(to.cpy().add(screenWidth, 0));
+        possiblePositions.add(to.cpy().add(simulationWidth, 0));
         // bottom universe
-        possiblePositions.add(flippedHorizontally.cpy().add(0, -screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(0, -simulationHeight));
         // top universe
-        possiblePositions.add(flippedHorizontally.cpy().add(0, screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(0, simulationHeight));
         // top-left universe
-        possiblePositions.add(flippedHorizontally.cpy().add(-screenWidth, screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(-simulationWidth, simulationHeight));
         // top-right universe
-        possiblePositions.add(flippedHorizontally.cpy().add(screenWidth, screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(simulationWidth, simulationHeight));
         // bottom-left universe
-        possiblePositions.add(flippedHorizontally.cpy().add(-screenWidth, -screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(-simulationWidth, -simulationHeight));
         // bottom-right universe
-        possiblePositions.add(flippedHorizontally.cpy().add(screenWidth, -screenHeight));
+        possiblePositions.add(flippedHorizontally.cpy().add(simulationWidth, -simulationHeight));
 
         Vector2 closestPosition = Collections.min(possiblePositions, new Comparator<Vector2>() {
             @Override
@@ -61,11 +62,10 @@ public class KleinWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 relativeVelocity(Vector2 myPos, Vector2 otherPos, Vector2 otherVel) {
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 otherRelativeDisplacement = relativeDisplacement(myPos, otherPos);
         Vector2 otherAbsolutePosition = myPos.cpy().add(otherRelativeDisplacement);
 
-        if (Math.floor(otherAbsolutePosition.y / screenHeight) == Math.floor(myPos.y / screenHeight)) {
+        if (Math.floor(otherAbsolutePosition.y / simulationHeight) == Math.floor(myPos.y / simulationHeight)) {
             return otherVel;
         } else {
             return otherVel.scl(-1, 1);
@@ -83,7 +83,7 @@ public class KleinWrappingScheme extends WrappingScheme {
         Vector2 newVelocity = currentVelocity.cpy();
 
         boolean oobBottom = position.y < 0;
-        boolean oobTop = position.y >= Gdx.graphics.getHeight();
+        boolean oobTop = position.y >= simulationHeight;
         if (oobBottom || oobTop) {
             return newVelocity.scl(-1, 1);
         }
@@ -92,40 +92,36 @@ public class KleinWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedPosition(Vector2 positionToWrap) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 newPosition = positionToWrap.cpy();
 
         // Set up the horizontal out of bounds parameters
         boolean oobLeft = newPosition.x < 0;
         boolean oobRight = newPosition.x >= 0;
         if (oobLeft || oobRight) {
-            newPosition.x += screenWidth * (int) -Math.floor(newPosition.x / screenWidth);
+            newPosition.x += simulationWidth * (int) -Math.floor(newPosition.x / simulationWidth);
         }
 
         // Set up the vertical out of bounds parameters
         boolean oobBottom  = newPosition.y < 0;
-        boolean oobTop = newPosition.y >= screenHeight;
+        boolean oobTop = newPosition.y >= simulationHeight;
         if (oobBottom || oobTop) {
-            newPosition.y += screenHeight * (int) -Math.floor(newPosition.y / screenHeight);
-            newPosition.sub(screenWidth - 2*(screenWidth - newPosition.x), 0);
+            newPosition.y += simulationHeight * (int) -Math.floor(newPosition.y / simulationHeight);
+            newPosition.sub(simulationWidth - 2*(simulationWidth - newPosition.x), 0);
         }
         return newPosition;
     }
 
     @Override
     public List<Pair<Vector2, Vector2>> getRenderingPositionsAndVelocities(Boid boid) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         List<Pair<Vector2, Vector2>> positionsAndVelocities = new ArrayList<>();
-        Vector2 leftPosition = boid.getPosition().sub(screenWidth, 0);
-        Vector2 topLeftPosition = boid.getPosition().scl(-1, 1).add(0, screenHeight);
-        Vector2 bottomLeftPosition = boid.getPosition().scl(-1, 1).add(0, -screenHeight);
-        Vector2 topPosition = boid.getPosition().scl(-1, 1).add(screenWidth, screenHeight);
-        Vector2 bottomPosition = boid.getPosition().scl(-1, 1).add(screenWidth, -screenHeight);
-        Vector2 topRightPosition = boid.getPosition().scl(-1, 1).add(2*screenWidth, screenHeight);
-        Vector2 rightPosition = boid.getPosition().add(screenWidth, 0);
-        Vector2 bottomRightPosition = boid.getPosition().scl(-1, 1).add(2*screenWidth, -screenHeight);
+        Vector2 leftPosition = boid.getPosition().sub(simulationWidth, 0);
+        Vector2 topLeftPosition = boid.getPosition().scl(-1, 1).add(0, simulationHeight);
+        Vector2 bottomLeftPosition = boid.getPosition().scl(-1, 1).add(0, -simulationHeight);
+        Vector2 topPosition = boid.getPosition().scl(-1, 1).add(simulationWidth, simulationHeight);
+        Vector2 bottomPosition = boid.getPosition().scl(-1, 1).add(simulationWidth, -simulationHeight);
+        Vector2 topRightPosition = boid.getPosition().scl(-1, 1).add(2*simulationWidth, simulationHeight);
+        Vector2 rightPosition = boid.getPosition().add(simulationWidth, 0);
+        Vector2 bottomRightPosition = boid.getPosition().scl(-1, 1).add(2*simulationWidth, -simulationHeight);
         positionsAndVelocities.add(new Pair<>(leftPosition, boid.getVelocity()));
         positionsAndVelocities.add(new Pair<>(topLeftPosition, boid.getVelocity().scl(-1, 1)));
         positionsAndVelocities.add(new Pair<>(bottomLeftPosition, boid.getVelocity().scl(-1, 1)));

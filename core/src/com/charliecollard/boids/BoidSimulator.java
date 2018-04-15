@@ -18,6 +18,9 @@ import java.util.*;
 public class BoidSimulator extends ApplicationAdapter {
     public static final int PLOT_UPDATE_PERIOD = 1; // update the plot every n ticks
     public static final boolean PLOT_ENABLED = true;
+    public static int simulationWidth = 880;
+    public static int simulationHeight = 880;
+    public static int updateCount = 0;
 
     public static int boidCount = 200;
     public static WrappingScheme wrappingScheme = new PeriodicWrappingScheme();
@@ -29,6 +32,7 @@ public class BoidSimulator extends ApplicationAdapter {
     private static boolean debugCorrelations = false;
     private static boolean debugInfluences = false;
     protected static boolean debugBoidColorsOn = true;
+    public static boolean renderingOn = true;
     protected static OrthographicCamera cam;
     protected static OrthographicCamera zoomedOutCam;
     private static int plotUpdateCounter = 0;
@@ -58,16 +62,19 @@ public class BoidSimulator extends ApplicationAdapter {
 
 	@Override
 	public void create() {
+        for (Boid boid : boidList) {
+            boid.loadSprite();
+        }
 		sb = new SpriteBatch();
         font = new BitmapFont();
         font.setColor(Color.GREEN);
-        cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        cam.position.set(Gdx.graphics.getWidth()/2f, Gdx.graphics.getHeight()/2f, 0);
+        cam = new OrthographicCamera(simulationWidth, simulationHeight);
+        cam.position.set(simulationWidth / 2f, simulationHeight / 2f, 0);
         cam.update();
-        zoomedOutCam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        zoomedOutCam.position.set(Gdx.graphics.getWidth()/2f, Gdx.graphics.getHeight()/2f, 0);
-        zoomedOutCam.viewportWidth = Gdx.graphics.getWidth()*3;
-        zoomedOutCam.viewportHeight = Gdx.graphics.getHeight()*3;
+        zoomedOutCam = new OrthographicCamera(simulationWidth, simulationHeight);
+        zoomedOutCam.position.set(simulationWidth/2f, simulationHeight/2f, 0);
+        zoomedOutCam.viewportWidth = simulationWidth*3;
+        zoomedOutCam.viewportHeight = simulationHeight*3;
         zoomedOutCam.update();
 //        boidList.add(new Boid(new Vector2(440, 870), new Vector2(200, 0)));
 //        boidList.add(new Boid(new Vector2(870, 440), new Vector2(0, -200)));
@@ -163,11 +170,11 @@ public class BoidSimulator extends ApplicationAdapter {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
-                    Vector2 clickPosition = new Vector2(screenX, Gdx.graphics.getHeight() - screenY);
+                    Vector2 clickPosition = new Vector2(screenX, simulationHeight - screenY);
                     if (zoomOut) {
                         Vector3 projection = zoomedOutCam.unproject(new Vector3(clickPosition, 0));
                         clickPosition.x = projection.x;
-                        clickPosition.y = Gdx.graphics.getHeight() - projection.y;
+                        clickPosition.y = simulationHeight - projection.y;
                     }
                     boidList.add(new Boid(clickPosition, wrappingScheme));
                     return true;
@@ -182,11 +189,11 @@ public class BoidSimulator extends ApplicationAdapter {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                Vector2 clickPosition = new Vector2(screenX, Gdx.graphics.getHeight() - screenY);
+                Vector2 clickPosition = new Vector2(screenX, simulationHeight - screenY);
                 if (zoomOut) {
                     Vector3 projection = zoomedOutCam.unproject(new Vector3(clickPosition, 0));
                     clickPosition.x = projection.x;
-                    clickPosition.y = Gdx.graphics.getHeight() - projection.y;
+                    clickPosition.y = simulationHeight - projection.y;
                 }
                 boidList.add(new Boid(clickPosition, wrappingScheme));
                 return true;
@@ -234,7 +241,7 @@ public class BoidSimulator extends ApplicationAdapter {
         velocityList.clear();
         // Update each boid by passing it the nearby positions of other boids
         for (Boid boid : boidList) {
-            boid.update(Gdx.graphics.getDeltaTime(), neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
+            boid.update(renderingOn ? Gdx.graphics.getDeltaTime() : 0, neighbourPositionMap.get(boid), neighbourVelocityMap.get(boid));
             boid.performWrapping();
             velocityList.add(boid.getVelocity());
         }
@@ -260,22 +267,21 @@ public class BoidSimulator extends ApplicationAdapter {
             plotUpdateCounter += 1;
             plotUpdateCounter %= PLOT_UPDATE_PERIOD;
         }
+        updateCount += 1;
     }
 
 	@Override
 	public void render() {
         update();
 
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
 		Gdx.gl.glClearColor(0, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         if (zoomOut) {
-            DebugShapeRenderer.drawLine(new Vector2(0, -screenHeight), new Vector2(0, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(screenWidth, -screenHeight), new Vector2(screenWidth, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, 0), new Vector2(2 * screenWidth, 0), 1, Color.WHITE, zoomedOutCam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, screenHeight), new Vector2(2 * screenWidth, screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(0, -simulationHeight), new Vector2(0, 2 * simulationHeight), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(simulationWidth, -simulationHeight), new Vector2(simulationWidth, 2 * simulationHeight), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-simulationWidth, 0), new Vector2(2 * simulationWidth, 0), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-simulationWidth, simulationHeight), new Vector2(2 * simulationWidth, simulationHeight), 1, Color.WHITE, zoomedOutCam.combined);
         }
 
         if (debugCircles) {
@@ -315,7 +321,7 @@ public class BoidSimulator extends ApplicationAdapter {
 
 
         sb.setProjectionMatrix(cam.combined);
-        font.draw(sb, boidList.size() + " boids", 10, screenHeight-20);
+        font.draw(sb, boidList.size() + " boids", 10, simulationHeight - 20);
         font.draw(sb, String.format("Polarization: %.3f", polarization), 10, 100);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);

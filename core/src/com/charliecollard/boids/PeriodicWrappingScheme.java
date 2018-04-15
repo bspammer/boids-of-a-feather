@@ -7,6 +7,9 @@ import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.charliecollard.boids.BoidSimulator.simulationHeight;
+import static com.charliecollard.boids.BoidSimulator.simulationWidth;
+
 public class PeriodicWrappingScheme extends WrappingScheme {
     @Override
     public Vector2 relativeDisplacement(Boid from, Boid to) {
@@ -15,28 +18,26 @@ public class PeriodicWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 relativeDisplacement(Vector2 from, Vector2 to) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         float xDisplacement, yDisplacement;
-        float leftHorDist = Math.abs(from.x-(to.x-screenWidth));
+        float leftHorDist = Math.abs(from.x-(to.x-simulationWidth));
         float middleHorDist = Math.abs(from.x-to.x);
-        float rightHorDist = Math.abs(from.x-(to.x+screenWidth));
-        float bottomVerDist = Math.abs(from.y-(to.y-screenHeight));
+        float rightHorDist = Math.abs(from.x-(to.x+simulationWidth));
+        float bottomVerDist = Math.abs(from.y-(to.y-simulationHeight));
         float middleVerDist = Math.abs(from.y-to.y);
-        float topVerDist = Math.abs(from.y-(to.y+screenHeight));
+        float topVerDist = Math.abs(from.y-(to.y+simulationHeight));
         if (leftHorDist < middleHorDist && leftHorDist < rightHorDist) {
-            xDisplacement = from.x - (to.x-screenWidth);
+            xDisplacement = from.x - (to.x-simulationWidth);
         } else if (middleHorDist < leftHorDist && middleHorDist < rightHorDist) {
             xDisplacement = from.x - to.x;
         } else {
-            xDisplacement = from.x - (to.x + screenWidth);
+            xDisplacement = from.x - (to.x + simulationWidth);
         }
         if (bottomVerDist < middleVerDist && bottomVerDist < topVerDist) {
-            yDisplacement = from.y - (to.y-screenHeight);
+            yDisplacement = from.y - (to.y-simulationHeight);
         } else if (middleVerDist < bottomVerDist && middleVerDist < topVerDist) {
             yDisplacement = from.y - to.y;
         } else {
-            yDisplacement = from.y - (to.y + screenHeight);
+            yDisplacement = from.y - (to.y + simulationHeight);
         }
         return new Vector2(-xDisplacement, -yDisplacement);
     }
@@ -63,30 +64,26 @@ public class PeriodicWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedPosition(Vector2 positionToWrap) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-        if (positionToWrap.x < 0 || positionToWrap.x >= screenWidth) {
-            positionToWrap.x += screenWidth * (int) -Math.floor(positionToWrap.x / screenWidth);
+        if (positionToWrap.x < 0 || positionToWrap.x >= simulationWidth) {
+            positionToWrap.x += simulationWidth * (int) -Math.floor(positionToWrap.x / simulationWidth);
         }
-        if (positionToWrap.y < 0 || positionToWrap.y >= screenHeight) {
-            positionToWrap.y += screenHeight * (int) -Math.floor(positionToWrap.y / screenHeight);
+        if (positionToWrap.y < 0 || positionToWrap.y >= simulationHeight) {
+            positionToWrap.y += simulationHeight * (int) -Math.floor(positionToWrap.y / simulationHeight);
         }
         return positionToWrap;
     }
 
     @Override
     public List<Pair<Vector2, Vector2>> getRenderingPositionsAndVelocities(Boid boid) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         List<Pair<Vector2, Vector2>> positionsAndVelocities = new ArrayList<>();
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-screenWidth, -screenHeight), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(0, -screenHeight), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(screenWidth, -screenHeight), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-screenWidth, 0), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(screenWidth, 0), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-screenWidth, screenHeight), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(0, screenHeight), boid.getVelocity()));
-        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(screenWidth, screenHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-simulationWidth, -simulationHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(0, -simulationHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(simulationWidth, -simulationHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-simulationWidth, 0), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(simulationWidth, 0), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(-simulationWidth, simulationHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(0, simulationHeight), boid.getVelocity()));
+        positionsAndVelocities.add(new Pair<>(boid.getPosition().add(simulationWidth, simulationHeight), boid.getVelocity()));
         return positionsAndVelocities;
     }
 }

@@ -9,7 +9,6 @@ public class DesktopLauncher {
     public static void main(String[] args) {
         LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
         config.width = 880;
-        //		config.width = 880;
         config.height = 880;
         config.resizable = false;
 
@@ -95,6 +94,11 @@ public class DesktopLauncher {
                 .desc("Fullscreen the application (it is recommended to set the width and height parameters to your screen size along with this option)")
                 .required(false)
                 .build();
+        Option headless = Option.builder()
+                .longOpt("headless")
+                .desc("Run without rendering the simulation")
+                .required(false)
+                .build();
 
         Options options = new Options();
         options.addOption(width);
@@ -111,13 +115,22 @@ public class DesktopLauncher {
         options.addOption(loadFile);
         options.addOption(zoomOut);
         options.addOption(fullscreen);
+        options.addOption(headless);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
-            if (cmd.hasOption("width")) config.width = Integer.valueOf(cmd.getOptionValue("width"));
-            if (cmd.hasOption("height")) config.height = Integer.valueOf(cmd.getOptionValue("height"));
+            if (cmd.hasOption("width")) {
+                int passedWidth = Integer.valueOf(cmd.getOptionValue("width"));
+                config.width = passedWidth;
+                BoidSimulator.simulationWidth = passedWidth;
+            }
+            if (cmd.hasOption("height")) {
+                int passedHeight = Integer.valueOf(cmd.getOptionValue("height"));
+                config.height = passedHeight;
+                BoidSimulator.simulationHeight = passedHeight;
+            }
             if (cmd.hasOption("number")) BoidSimulator.boidCount = Integer.valueOf(cmd.getOptionValue("number"));
             if (cmd.hasOption("separation")) Boid.separationWeight = Integer.valueOf(cmd.getOptionValue("separation"));
             if (cmd.hasOption("cohesion")) Boid.cohesionWeight = Integer.valueOf(cmd.getOptionValue("cohesion"));
@@ -143,6 +156,7 @@ public class DesktopLauncher {
             }
             if (cmd.hasOption("zoom-out")) BoidSimulator.zoomOut = true;
             if (cmd.hasOption("fullscreen")) config.fullscreen = true;
+            if (cmd.hasOption("headless")) BoidSimulator.renderingOn = false;
         } catch (ParseException | NumberFormatException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
 		    helpFormatter.printHelp("desktop-1.0", "Create a boid simulation", options, "", true);
@@ -151,6 +165,13 @@ public class DesktopLauncher {
 
         config.x = 1920/2 - config.width/2;
         config.y = 1040/2 - config.height/2;
-        new LwjglApplication(new BoidSimulator(), config);
+        if (BoidSimulator.renderingOn) {
+            new LwjglApplication(new BoidSimulator(), config);
+        } else {
+            BoidSimulator boidSimulator = new BoidSimulator();
+            while (true) {
+                boidSimulator.update();
+            }
+        }
 	}
 }

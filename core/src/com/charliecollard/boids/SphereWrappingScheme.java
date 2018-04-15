@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.charliecollard.boids.BoidSimulator.simulationHeight;
+import static com.charliecollard.boids.BoidSimulator.simulationWidth;
+
 public class SphereWrappingScheme extends WrappingScheme {
     @Override
     public Vector2 relativeDisplacement(Boid from, Boid to) {
@@ -17,9 +20,7 @@ public class SphereWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 relativeDisplacement(final Vector2 from, Vector2 to) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-        Vector2 screenCentre = new Vector2(screenWidth/2f, screenHeight/2f);
+        Vector2 screenCentre = new Vector2(simulationWidth/2f, simulationHeight/2f);
         Vector2 clockwiseRotation = to.cpy().sub(screenCentre).rotate(-90).add(screenCentre);
         Vector2 anticlockwiseRotation = to.cpy().sub(screenCentre).rotate(90).add(screenCentre);
         Vector2 halfRotation = to.cpy().sub(screenCentre).rotate(180).add(screenCentre);
@@ -28,21 +29,21 @@ public class SphereWrappingScheme extends WrappingScheme {
         // same universe
         Vector2 samePosition = to.cpy();
         // left universe
-        Vector2 leftPosition = anticlockwiseRotation.cpy().add(-screenWidth, 0);
+        Vector2 leftPosition = anticlockwiseRotation.cpy().add(-simulationWidth, 0);
         // right universe
-        Vector2 rightPosition = anticlockwiseRotation.cpy().add(screenWidth, 0);
+        Vector2 rightPosition = anticlockwiseRotation.cpy().add(simulationWidth, 0);
         // bottom universe
-        Vector2 bottomPosition = clockwiseRotation.cpy().add(0, -screenHeight);
+        Vector2 bottomPosition = clockwiseRotation.cpy().add(0, -simulationHeight);
         // top universe
-        Vector2 topPosition = clockwiseRotation.cpy().add(0, screenHeight);
+        Vector2 topPosition = clockwiseRotation.cpy().add(0, simulationHeight);
         // top-left universe
-        Vector2 topLeftPosition = halfRotation.cpy().add(-screenWidth, screenHeight);
+        Vector2 topLeftPosition = halfRotation.cpy().add(-simulationWidth, simulationHeight);
         // top-right universe
-        Vector2 topRightPosition = halfRotation.cpy().add(screenWidth, screenHeight);
+        Vector2 topRightPosition = halfRotation.cpy().add(simulationWidth, simulationHeight);
         // bottom-left universe
-        Vector2 bottomLeftPosition = halfRotation.cpy().add(-screenWidth, -screenHeight);
+        Vector2 bottomLeftPosition = halfRotation.cpy().add(-simulationWidth, -simulationHeight);
         // bottom-right universe
-        Vector2 bottomRightPosition = halfRotation.cpy().add(screenWidth, -screenHeight);
+        Vector2 bottomRightPosition = halfRotation.cpy().add(simulationWidth, -simulationHeight);
 
         possiblePositions.add(samePosition);
         possiblePositions.add(leftPosition);
@@ -74,26 +75,24 @@ public class SphereWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 relativeVelocity(Vector2 myPos, Vector2 otherPos, Vector2 otherVel) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 otherRelativeDisplacement = relativeDisplacement(myPos, otherPos);
         Vector2 otherAbsolutePosition = myPos.cpy().add(otherRelativeDisplacement);
 
         // corners
-        if (    (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y > screenHeight)
-                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y > screenHeight)
+        if (    (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y > simulationHeight)
+                || (otherAbsolutePosition.x > simulationWidth && otherAbsolutePosition.y > simulationHeight)
                 || (otherAbsolutePosition.x < 0 && otherAbsolutePosition.y < 0)
-                || (otherAbsolutePosition.x > screenWidth && otherAbsolutePosition.y < 0)) {
+                || (otherAbsolutePosition.x > simulationWidth && otherAbsolutePosition.y < 0)) {
             return otherVel.rotate(180);
         }
 
         // left or right
-        if (otherAbsolutePosition.x < 0 || otherAbsolutePosition.x > screenWidth) {
+        if (otherAbsolutePosition.x < 0 || otherAbsolutePosition.x > simulationWidth) {
             return otherVel.rotate(90);
         }
 
         // up or down
-        if (otherAbsolutePosition.y < 0 || otherAbsolutePosition.y > screenHeight) {
+        if (otherAbsolutePosition.y < 0 || otherAbsolutePosition.y > simulationHeight) {
             return otherVel.rotate(-90);
         }
 
@@ -108,25 +107,23 @@ public class SphereWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedVelocity(Vector2 position, Vector2 currentVelocity) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 newVelocity = currentVelocity.cpy();
 
         // corners
-        if (    (position.x < 0 && position.y > screenHeight)
-                || (position.x > screenWidth && position.y > screenHeight)
+        if (    (position.x < 0 && position.y > simulationHeight)
+                || (position.x > simulationWidth && position.y > simulationHeight)
                 || (position.x < 0 && position.y < 0)
-                || (position.x > screenWidth && position.y < 0)) {
+                || (position.x > simulationWidth && position.y < 0)) {
             return newVelocity.rotate(180);
         }
 
         // left or right
-        if (position.x < 0 || position.x > screenWidth) {
+        if (position.x < 0 || position.x > simulationWidth) {
             return newVelocity.rotate(-90);
         }
 
         // up or down
-        if (position.y < 0 || position.y > screenHeight) {
+        if (position.y < 0 || position.y > simulationHeight) {
             return newVelocity.rotate(90);
         }
         return newVelocity;
@@ -134,15 +131,13 @@ public class SphereWrappingScheme extends WrappingScheme {
 
     @Override
     public Vector2 wrappedPosition(Vector2 positionToWrap) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         Vector2 newPosition = positionToWrap.cpy();
 
         // Set up the out of bounds parameters
         boolean oobLeft = newPosition.x < 0;
-        boolean oobRight = newPosition.x >= screenWidth;
+        boolean oobRight = newPosition.x >= simulationWidth;
         boolean oobBottom  = newPosition.y < 0;
-        boolean oobTop = newPosition.y >= screenHeight;
+        boolean oobTop = newPosition.y >= simulationHeight;
         boolean oobTopLeft = oobTop && oobLeft;
         boolean oobTopRight = oobTop && oobRight;
         boolean oobBottomLeft = oobBottom && oobLeft;
@@ -151,16 +146,16 @@ public class SphereWrappingScheme extends WrappingScheme {
         // handle the corners first
         if (oobTopLeft) {
             // rotate about the top-left corner
-            newPosition.sub(0, screenHeight).rotate(180).add(0, screenHeight);
+            newPosition.sub(0, simulationHeight).rotate(180).add(0, simulationHeight);
         } else if (oobTopRight) {
             // rotate about the top-right corner
-            newPosition.sub(screenWidth, screenHeight).rotate(180).add(screenWidth, screenHeight);
+            newPosition.sub(simulationWidth, simulationHeight).rotate(180).add(simulationWidth, simulationHeight);
         } else if (oobBottomLeft) {
             // rotate about the bottom-left corner (the origin)
             newPosition.rotate(180);
         } else if (oobBottomRight) {
             // rotate about the bottom-right corner
-            newPosition.sub(screenWidth, 0).rotate(180).add(screenWidth, 0);
+            newPosition.sub(simulationWidth, 0).rotate(180).add(simulationWidth, 0);
         }
         // handle the edges (should be mutually exclusive to the corners)
         else if (oobLeft) {
@@ -168,30 +163,28 @@ public class SphereWrappingScheme extends WrappingScheme {
             newPosition.rotate(-90);
         } else if (oobRight) {
             // rotate about the top-right corner
-            newPosition.sub(screenWidth, screenHeight).rotate(-90).add(screenWidth, screenHeight);
+            newPosition.sub(simulationWidth, simulationHeight).rotate(-90).add(simulationWidth, simulationHeight);
         } else if (oobBottom) {
             // rotate about the bottom-left corner (the origin)
             newPosition.rotate(90);
         } else if (oobTop) {
             // rotate about the top-right corner
-            newPosition.sub(screenWidth, screenHeight).rotate(90).add(screenWidth, screenHeight);
+            newPosition.sub(simulationWidth, simulationHeight).rotate(90).add(simulationWidth, simulationHeight);
         }
         return newPosition;
     }
 
     @Override
     public List<Pair<Vector2, Vector2>> getRenderingPositionsAndVelocities(Boid boid) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
         List<Pair<Vector2, Vector2>> positionsAndVelocities = new ArrayList<>();
-        Vector2 leftPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(90).add(-screenWidth/2, screenHeight/2);
-        Vector2 topLeftPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(180).add(-screenWidth/2, 3*screenHeight/2);
-        Vector2 bottomLeftPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(180).add(-screenWidth/2, -screenHeight/2);
-        Vector2 topPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(-90).add(screenWidth/2, 3*screenHeight/2);
-        Vector2 bottomPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(-90).add(screenWidth/2, -screenHeight/2);
-        Vector2 topRightPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(180).add(3*screenWidth/2, 3*screenHeight/2);
-        Vector2 rightPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(90).add(3*screenWidth/2, screenHeight/2);
-        Vector2 bottomRightPosition = boid.getPosition().sub(screenWidth/2, screenHeight/2).rotate(180).add(3*screenWidth/2, -screenHeight/2);
+        Vector2 leftPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(90).add(-simulationWidth/2, simulationHeight/2);
+        Vector2 topLeftPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(180).add(-simulationWidth/2, 3*simulationHeight/2);
+        Vector2 bottomLeftPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(180).add(-simulationWidth/2, -simulationHeight/2);
+        Vector2 topPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(-90).add(simulationWidth/2, 3*simulationHeight/2);
+        Vector2 bottomPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(-90).add(simulationWidth/2, -simulationHeight/2);
+        Vector2 topRightPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(180).add(3*simulationWidth/2, 3*simulationHeight/2);
+        Vector2 rightPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(90).add(3*simulationWidth/2, simulationHeight/2);
+        Vector2 bottomRightPosition = boid.getPosition().sub(simulationWidth/2, simulationHeight/2).rotate(180).add(3*simulationWidth/2, -simulationHeight/2);
         positionsAndVelocities.add(new Pair<>(leftPosition, boid.getVelocity().rotate(90)));
         positionsAndVelocities.add(new Pair<>(topLeftPosition, boid.getVelocity().rotate(180)));
         positionsAndVelocities.add(new Pair<>(bottomLeftPosition, boid.getVelocity().rotate(180)));

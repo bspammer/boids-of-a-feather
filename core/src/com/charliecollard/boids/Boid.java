@@ -11,6 +11,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.List;
 
+import static com.charliecollard.boids.BoidSimulator.simulationWidth;
+import static com.charliecollard.boids.BoidSimulator.simulationHeight;
+
 public class Boid implements Serializable {
     public static final float MAX_SPEED = 300f;
     public static final float PI = (float) Math.PI;
@@ -30,9 +33,9 @@ public class Boid implements Serializable {
     protected transient Sprite boidSprite;
     protected transient Color spriteColor;
     protected transient WrappingScheme wrappingScheme;
-    protected Vector2 lastSeparation;
-    protected Vector2 lastCohesion;
-    protected Vector2 lastAlignment;
+    protected transient Vector2 lastSeparation;
+    protected transient Vector2 lastCohesion;
+    protected transient Vector2 lastAlignment;
 
     public Boid() {
         this(new PeriodicWrappingScheme());
@@ -41,21 +44,17 @@ public class Boid implements Serializable {
     public Boid(WrappingScheme wrappingScheme) {
         Random rand = new Random();
 
-        boidSprite = new Sprite(TextureController.getInstance().getTexture(boidTexture));
-        boidSprite.setOrigin(boidSprite.getWidth() / 2, boidSprite.getHeight() / 2);
-        float hue = rand.nextFloat();
-        float saturation = (rand.nextInt(2000) + 1000) / 2000f;
-        float luminance = 0.9f;
-        java.awt.Color tempColor = java.awt.Color.getHSBColor(hue, saturation, luminance);
-        spriteColor = new Color(((tempColor.getRGB() & 0xffffff) << 8) | 0xff);
-        if (BoidSimulator.debugBoidColorsOn) boidSprite.setColor(spriteColor);
-        boidSprite.setScale(0.3f);
+        try {
+            loadSprite();
+        } catch (NullPointerException e) {
+            // We're probably in headless mode
+        }
 
         float heading = rand.nextFloat() * 2 * PI;
 //        float heading = 0;
-//        this.setPosition(new Vector2(Gdx.graphics.getWidth()/2,Gdx.graphics.getHeight()/2));
+//        this.setPosition(new Vector2(simulationWidth/2,simulationHeight/2));
         this.wrappingScheme = wrappingScheme;
-        this.setPosition(new Vector2(rand.nextFloat() * Gdx.graphics.getWidth(), rand.nextFloat() * Gdx.graphics.getHeight()));
+        this.setPosition(new Vector2(rand.nextFloat() * simulationWidth, rand.nextFloat() * simulationHeight));
         this.setVelocity(new Vector2((float) (MAX_SPEED * Math.sin(heading)), (float) (MAX_SPEED * Math.cos(heading))));
     }
 
@@ -68,6 +67,21 @@ public class Boid implements Serializable {
         this(wrappingScheme);
         this.setPosition(startPosition);
         this.setVelocity(startVelocity);
+    }
+
+    public void loadSprite() {
+        if (BoidSimulator.renderingOn) {
+            Random rand = new Random();
+            boidSprite = new Sprite(TextureController.getInstance().getTexture(boidTexture));
+            boidSprite.setOrigin(boidSprite.getWidth() / 2, boidSprite.getHeight() / 2);
+            float hue = rand.nextFloat();
+            float saturation = (rand.nextInt(2000) + 1000) / 2000f;
+            float luminance = 0.9f;
+            java.awt.Color tempColor = java.awt.Color.getHSBColor(hue, saturation, luminance);
+            spriteColor = new Color(((tempColor.getRGB() & 0xffffff) << 8) | 0xff);
+            if (BoidSimulator.debugBoidColorsOn) boidSprite.setColor(spriteColor);
+            boidSprite.setScale(0.3f);
+        }
     }
 
     public void update(float deltaTime, List<Vector2> nearbyBoidDisplacements, List<Vector2> nearbyBoidVelocities) {
