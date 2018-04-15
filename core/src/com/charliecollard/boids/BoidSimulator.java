@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Disposable;
 
 import java.io.*;
@@ -31,6 +32,7 @@ public class BoidSimulator extends ApplicationAdapter {
     private static int correlationNumber = 40;
     private static ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
     protected static OrthographicCamera cam;
+    protected static OrthographicCamera zoomedOutCam;
     protected static boolean debugBoidColorsOn = true;
     private static int plotUpdateCounter = 0;
     private SpriteBatch sb;
@@ -58,6 +60,11 @@ public class BoidSimulator extends ApplicationAdapter {
         cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         cam.position.set(Gdx.graphics.getWidth()/2f, Gdx.graphics.getHeight()/2f, 0);
         cam.update();
+        zoomedOutCam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        zoomedOutCam.position.set(Gdx.graphics.getWidth()/2f, Gdx.graphics.getHeight()/2f, 0);
+        zoomedOutCam.viewportWidth = Gdx.graphics.getWidth()*3;
+        zoomedOutCam.viewportHeight = Gdx.graphics.getHeight()*3;
+        zoomedOutCam.update();
 
         // Create boids or load them from disk if specified
         if (filepathToLoad == null) {
@@ -161,13 +168,13 @@ public class BoidSimulator extends ApplicationAdapter {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
-                    Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                    Vector2 clickPosition = new Vector2(screenX, Gdx.graphics.getHeight() - screenY);
                     if (zoomOut) {
-                        float screenWidth = Gdx.graphics.getWidth();
-                        float screenHeight = Gdx.graphics.getHeight();
-                        boidPosition.add(screenWidth/2, screenHeight/2).scl(3).sub(screenWidth/2, screenHeight/2);
+                        Vector3 projection = zoomedOutCam.unproject(new Vector3(clickPosition, 0));
+                        clickPosition.x = projection.x;
+                        clickPosition.y = Gdx.graphics.getHeight() - projection.y;
                     }
-                    boidList.add(new Boid(boidPosition, wrappingScheme));
+                    boidList.add(new Boid(clickPosition, wrappingScheme));
                     return true;
                 }
                 return false;
@@ -180,13 +187,13 @@ public class BoidSimulator extends ApplicationAdapter {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                Vector2 boidPosition = new Vector2(screenX, Gdx.graphics.getHeight()-screenY);
+                Vector2 clickPosition = new Vector2(screenX, Gdx.graphics.getHeight() - screenY);
                 if (zoomOut) {
-                    float screenWidth = Gdx.graphics.getWidth();
-                    float screenHeight = Gdx.graphics.getHeight();
-                    boidPosition.add(screenWidth/2, screenHeight/2).scl(3).sub(screenWidth/2, screenHeight/2);
+                    Vector3 projection = zoomedOutCam.unproject(new Vector3(clickPosition, 0));
+                    clickPosition.x = projection.x;
+                    clickPosition.y = Gdx.graphics.getHeight() - projection.y;
                 }
-                boidList.add(new Boid(boidPosition, wrappingScheme));
+                boidList.add(new Boid(clickPosition, wrappingScheme));
                 return true;
             }
 
@@ -288,21 +295,15 @@ public class BoidSimulator extends ApplicationAdapter {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         update();
-        cam.viewportWidth = screenWidth;
-        cam.viewportHeight = screenHeight;
-        cam.update();
         if (zoomOut) {
-            cam.viewportWidth = screenWidth*3;
-            cam.viewportHeight = screenHeight*3;
-            cam.update();
-            DebugShapeRenderer.drawLine(new Vector2(0, -screenHeight), new Vector2(0, 2 * screenHeight), 1, Color.WHITE, cam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(screenWidth, -screenHeight), new Vector2(screenWidth, 2 * screenHeight), 1, Color.WHITE, cam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, 0), new Vector2(2 * screenWidth, 0), 1, Color.WHITE, cam.combined);
-            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, screenHeight), new Vector2(2 * screenWidth, screenHeight), 1, Color.WHITE, cam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(0, -screenHeight), new Vector2(0, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(screenWidth, -screenHeight), new Vector2(screenWidth, 2 * screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, 0), new Vector2(2 * screenWidth, 0), 1, Color.WHITE, zoomedOutCam.combined);
+            DebugShapeRenderer.drawLine(new Vector2(-screenWidth, screenHeight), new Vector2(2 * screenWidth, screenHeight), 1, Color.WHITE, zoomedOutCam.combined);
         }
 
         if (debugCircles) {
-            DebugShapeRenderer.startBatch(Color.GREEN, 1, cam.combined);
+            DebugShapeRenderer.startBatch(Color.GREEN, 1, zoomOut ? zoomedOutCam.combined : cam.combined);
             for (Boid boid : boidList) {
                 DebugShapeRenderer.batchCircle(boid.getPosition(), Boid.visionRange);
             }
@@ -310,7 +311,7 @@ public class BoidSimulator extends ApplicationAdapter {
         }
 
         if (debugFluctuations) {
-            DebugShapeRenderer.startBatch(Color.PINK, 1, cam.combined);
+            DebugShapeRenderer.startBatch(Color.PINK, 1, zoomOut ? zoomedOutCam.combined : cam.combined);
             for (Boid boid : boidList) {
                 Vector2 boidFluctuation = boid.getVelocity().sub(avgVelocity);
                 DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boidFluctuation));
@@ -319,7 +320,7 @@ public class BoidSimulator extends ApplicationAdapter {
         }
 
         if (debugInfluences) {
-            DebugShapeRenderer.startBatch(Color.YELLOW, 1, cam.combined);
+            DebugShapeRenderer.startBatch(Color.YELLOW, 1, zoomOut ? zoomedOutCam.combined : cam.combined);
             for (Boid boid : boidList) {
                 DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boid.lastSeparation.cpy().scl(10)), Color.YELLOW);
                 DebugShapeRenderer.batchLine(boid.getPosition(), boid.getPosition().add(boid.lastCohesion.cpy().scl(20)), Color.MAGENTA);
@@ -328,7 +329,7 @@ public class BoidSimulator extends ApplicationAdapter {
             DebugShapeRenderer.endBatch();
         }
 
-        sb.setProjectionMatrix(cam.combined);
+        sb.setProjectionMatrix(zoomOut ? zoomedOutCam.combined : cam.combined);
         sb.begin();
         List<Disposable> trashcan = new ArrayList<>();
 
@@ -337,10 +338,6 @@ public class BoidSimulator extends ApplicationAdapter {
         }
 
 
-        // Reset the camera before drawing the text
-        cam.viewportWidth = screenWidth;
-        cam.viewportHeight = screenHeight;
-        cam.update();
         sb.setProjectionMatrix(cam.combined);
         font.draw(sb, boidList.size() + " boids", 10, screenHeight-20);
         font.draw(sb, String.format("Polarization: %.3f", polarization), 10, 100);
