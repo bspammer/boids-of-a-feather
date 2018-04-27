@@ -52,7 +52,7 @@ public class PlotFrame extends ApplicationFrame {
         plot.setDomainGridlinePaint(Color.GRAY);
         plot.setRangeGridlinesVisible(true);
         plot.setRangeGridlinePaint(Color.GRAY);
-        plot.getDomainAxis().setAutoRange(true);
+        plot.getDomainAxis().setRange(0, BoidSimulator.simulationWidth/2);
         plot.getRangeAxis().setAutoRange(true);
         ValueMarker marker = new ValueMarker(0);
         marker.setPaint(Color.black);

@@ -20,7 +20,6 @@ public class BoidSimulator extends ApplicationAdapter {
     public static int simulationWidth = 880;
     public static int simulationHeight = 880;
     public static int updateCount = 0;
-
     public static int boidCount = 200;
     public static WrappingScheme wrappingScheme = new PeriodicWrappingScheme();
     public static int updateMode = Boid.UPDATE_DETERMINISTIC;

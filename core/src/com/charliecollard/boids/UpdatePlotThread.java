@@ -8,9 +8,9 @@ import java.util.List;
 
 public class UpdatePlotThread extends Thread {
     public static UpdatePlotThread mThread;
-    private static int correlationInterval = 10;
-    private static int correlationNumber = 40;
     private PlotFrame plotFrame;
+    public static int correlationInterval = 10;
+    public static int correlationNumber = BoidSimulator.simulationWidth/(correlationInterval*2);
     private ArrayList<ArrayList<Float>> correlationLists = new ArrayList<>();
     private List<Vector2> boidPositionList;
     private List<Vector2> boidVelocityList;
