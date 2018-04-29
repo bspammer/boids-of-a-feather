@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.Disposable;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class BoidSimulator extends ApplicationAdapter {
     public static final int PLOT_UPDATE_PERIOD = 1; // update the plot every n ticks
@@ -39,6 +40,8 @@ public class BoidSimulator extends ApplicationAdapter {
     private List<Vector2> velocityList = new ArrayList<>();
     private Vector2 avgVelocity = new Vector2(0, 0);
     private float polarization = 0;
+    private ArrayBlockingQueue<Float> fpsQueue = new ArrayBlockingQueue<>(100);
+    private float lastFps = 0;
     BitmapFont font;
     private static PlotFrame plotFrame;
 
@@ -266,6 +269,18 @@ public class BoidSimulator extends ApplicationAdapter {
             plotUpdateCounter %= PLOT_UPDATE_PERIOD;
         }
         updateCount += 1;
+
+        // Recalculate fps
+        lastFps = 1f/Gdx.graphics.getDeltaTime();
+        if (!fpsQueue.offer(lastFps)) {
+            fpsQueue.poll();
+            fpsQueue.add(lastFps);
+        }
+        lastFps = 0;
+        for (float f : fpsQueue) {
+            lastFps += f;
+        }
+        lastFps /= fpsQueue.size();
     }
 
 	@Override
@@ -320,6 +335,7 @@ public class BoidSimulator extends ApplicationAdapter {
 
         sb.setProjectionMatrix(cam.combined);
         font.draw(sb, boidList.size() + " boids", 10, simulationHeight - 20);
+        font.draw(sb, String.format("%.2f fps", lastFps), 10, simulationHeight - 40);
         font.draw(sb, String.format("Polarization: %.3f", polarization), 10, 100);
         font.draw(sb, "Separation:", 10, 60);
         font.draw(sb, String.format("%.3f", Boid.separationWeight * Boid.WEIGHT_SCALING_FACTOR), 90, 60);
