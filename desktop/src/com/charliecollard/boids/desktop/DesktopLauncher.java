@@ -56,7 +56,7 @@ public class DesktopLauncher {
                 .build();
         Option boundaryCondition = Option.builder("b")
                 .longOpt("boundary-condition")
-                .desc("The boundary condition to use for the simulation, either 'periodic' (default) or 'sphere'")
+                .desc("The boundary condition to use for the simulation, one of 'periodic' (default), 'solid', 'sphere', or 'klein'")
                 .hasArg()
                 .required(false)
                 .build();
